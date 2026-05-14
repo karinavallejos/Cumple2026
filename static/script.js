@@ -155,17 +155,32 @@ socket.on('round_result', (data) => {
 // 3. Resultado de la ronda (GANASTE / PERDISTE) [cite: 66, 149, 411, 433, 436]
 socket.on('round_result', (data) => {
     const ganador = data.ganador;
-    const msg = document.getElementById('mensaje-espera');
+    const msgArea = document.getElementById('mensaje-espera');
     
-    // Si el jugador realizó una apuesta en esta ronda
+    // Mostramos el área de mensaje para todos
+    msgArea.style.display = 'block';
+    document.getElementById('controles-juego').style.display = 'none';
+
     if (opcionElegida !== null) {
-        msg.style.display = 'block';
+        // SI APOSTÓ: Mostrar si ganó o perdió
         if (String(opcionElegida) === String(ganador)) {
-            msg.innerHTML = "<h1 style='color: #00ff00; font-size: 3rem;'>¡GANASTE! 🎉</h1>";
+            msgArea.innerHTML = "<h1 style='color: lime;'>¡GANASTE! 🎉</h1>";
         } else {
-            msg.innerHTML = "<h1 style='color: #ff4444; font-size: 2.5rem;'>MÁS SUERTE PARA LA PRÓXIMA 💀</h1>";
+            msgArea.innerHTML = "<h1 style='color: red;'>MÁS SUERTE PARA LA PRÓXIMA 💀</h1>";
         }
+    } else {
+        // SI NO APOSTÓ: Mostrar mensaje de penalización
+        msgArea.innerHTML = "<h1 style='color: #ffa500;'>PIERDE $50 POR NO APOSTAR 💸</h1>";
     }
+
+    // Actualizar dinero (que ya viene restado del servidor)
+    if (data.players[miNombre]) {
+        currentPuntos = data.players[miNombre].puntos;
+        document.getElementById('display-puntos').innerText = "$" + currentPuntos;
+    }
+
+    // El timeout de 4 segundos limpia todo y regresa a los botones
+});
 
     // Actualizamos saldo con los datos oficiales del servidor [cite: 34, 149, 433]
     if (data.players[miNombre]) {
