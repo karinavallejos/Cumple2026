@@ -18,3 +18,8 @@ body { background-color: black; color: white; font-family: 'Arial', sans-serif; 
     width: 80px; height: 80px; font-weight: bold; border: none; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
 }
+.opcion-btn.selected { 
+    border: 5px solid #ffcc00 !important; /* Amarillo neón */
+    box-shadow: 0 0 20px #ffcc00;
+    transform: scale(1.1);
+}
