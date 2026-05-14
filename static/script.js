@@ -7,16 +7,16 @@ let currentPuntos = 1000;
 let opcionElegida = null;
 let montoElegido = 0;
 
-// Al conectar, informamos al servidor quién es este jugador [cite: 36, 65]
+// Al conectar, informamos al servidor quién es este jugador [cite: 36, 65, 416]
 socket.on('connect', () => {
     if (!miNombre) {
-        window.location.href = "/"; // Si no hay nombre, al login [cite: 48]
+        window.location.href = "/"; // Si no hay nombre, al login [cite: 48, 416]
     }
     socket.emit('join', { name: miNombre });
 });
 
 /**
- * Genera los botones de juego dinámicamente (Dados, Cartas, etc.) [cite: 58, 59]
+ * Genera los botones de juego dinámicamente (Dados, Cartas, etc.) [cite: 58, 59, 417]
  */
 function renderizarBotones(opciones) {
     const contenedor = document.getElementById('contenedor-opciones');
@@ -27,50 +27,57 @@ function renderizarBotones(opciones) {
         const btn = document.createElement('button');
         btn.className = 'opcion-btn';
         btn.innerText = op;
-        // Al hacer clic, se marca visualmente [cite: 60, 400]
+        // Al hacer clic, se marca visualmente [cite: 60, 400, 418]
         btn.onclick = () => seleccionarOpcion(op, btn);
         contenedor.appendChild(btn);
     });
     
-    opcionElegida = null; // Reiniciar selección para nueva ronda
+    opcionElegida = null; // Reiniciar selección para nueva ronda [cite: 419]
 }
 
 /**
- * Maneja el borde amarillo de selección [cite: 60, 400]
+ * Maneja el borde amarillo de selección de números o pintas [cite: 60, 400, 421]
  */
 function seleccionarOpcion(val, elemento) {
     opcionElegida = val;
-    // Quitamos la clase 'selected' de todos los botones [cite: 400]
+    // Quitamos la clase 'selected' de todos los botones [cite: 400, 422]
     document.querySelectorAll('.opcion-btn').forEach(b => b.classList.remove('selected'));
-    // Añadimos el borde amarillo al seleccionado [cite: 35, 400]
+    // Añadimos el borde amarillo al seleccionado [cite: 35, 400, 423]
     elemento.classList.add('selected');
 }
 
 /**
- * Captura el monto de los botones amarillos o del input manual [cite: 403, 404]
+ * Captura el monto de los botones amarillos o del input manual [cite: 403, 404, 511, 512]
  */
-function prepararMonto(monto) {
+function seleccionarPlata(monto, elemento) {
+    // Si el monto viene de los botones predefinidos
     if (monto === 'ALL') {
         montoElegido = currentPuntos;
         alert("¡Has seleccionado TODO TU DINERO!");
-    } else {
+    } else if (monto !== "") {
         montoElegido = parseInt(monto);
     }
-    // Si eligen un botón, limpiamos el input manual para no confundir
-    document.getElementById('monto-manual').value = "";
+
+    // Feedback visual para los botones amarillos [cite: 511]
+    document.querySelectorAll('.apuesta-btn').forEach(b => b.classList.remove('selected-money'));
+    if (elemento && elemento.classList.contains('apuesta-btn')) {
+        elemento.classList.add('selected-money');
+        // Limpiamos el input manual si se usa un botón para no confundir
+        document.getElementById('monto-manual').value = "";
+    }
 }
 
 /**
- * ENVÍO FINAL: Se ejecuta al presionar el botón VERDE [cite: 316, 402, 408]
+ * ENVÍO FINAL: Se ejecuta al presionar el botón VERDE [cite: 316, 402, 408, 441, 513]
  */
 function confirmarApuesta() {
-    // Revisamos si hay algo escrito en el cuadro manual [cite: 404, 407]
+    // Revisamos si hay algo escrito en el cuadro manual por si se escribió después de elegir un botón
     const montoManual = document.getElementById('monto-manual').value;
     if (montoManual > 0) {
         montoElegido = parseInt(montoManual);
     }
 
-    // Validaciones [cite: 44, 67]
+    // Validaciones de seguridad [cite: 44, 67, 427, 428]
     if (opcionElegida === null) {
         alert("Primero elige un número o pinta."); return;
     }
@@ -81,42 +88,52 @@ function confirmarApuesta() {
         alert("No tienes dinero suficiente."); return;
     }
 
-    // Enviamos al servidor [cite: 36, 373]
-    socket.emit('place_bet', { 
-        name: miNombre, 
-        monto: montoElegido, 
-        opcion: opcionElegida 
-    });
+    // Preguntar si está seguro antes de procesar 
+    if (confirm(`¿Estás seguro de apostar $${montoElegido} al ${opcionElegida}?`)) {
+        // Enviamos al servidor [cite: 36, 373, 429]
+        socket.emit('place_bet', { 
+            name: miNombre, 
+            monto: montoElegido, 
+            opcion: opcionElegida 
+        });
 
-    // BLOQUEO DE PANTALLA: Ocultamos controles y mostramos espera [cite: 402, 408]
-    document.getElementById('controles-juego').style.display = 'none';
-    const msg = document.getElementById('mensaje-espera');
-    msg.innerHTML = "⏳ APUESTA ENVIADA... <br> ESPERANDO AL ADMIN";
-    msg.style.display = 'block';
+        // BLOQUEO DE PANTALLA: Ocultamos controles y mostramos estado "Pending" [cite: 402, 408, 442, 514]
+        document.getElementById('controles-juego').style.display = 'none';
+        const msg = document.getElementById('mensaje-espera');
+        msg.innerHTML = "⌛ APUESTA ENVIADA... <br> ESPERANDO AL ADMIN";
+        msg.style.display = 'block';
+    }
 }
 
 // --- ESCUCHADORES (SOCKETS) ---
 
-// 1. Actualización de saldo inicial [cite: 34, 66]
+// 1. Actualización de saldo inicial y ronda [cite: 34, 66, 430, 510]
 socket.on('update_data', (data) => {
     currentPuntos = data.puntos;
     document.getElementById('display-puntos').innerText = "$" + currentPuntos;
+    document.getElementById('ronda-display').innerText = "RONDA " + data.game.ronda;
 });
 
-// 2. Cambio de juego (Dados/Cartas) [cite: 54, 149]
+// 2. Cambio de juego o nueva ronda habilitada [cite: 54, 149, 431, 508]
 socket.on('new_game', (game) => {
     renderizarBotones(game.options);
-    // Asegurar que los controles vuelvan a verse si el admin cambia de juego
+    document.getElementById('ronda-display').innerText = "RONDA " + game.ronda;
+    // Asegurar que los controles vuelvan a verse cuando el admin inicie nueva ronda [cite: 431]
     document.getElementById('controles-juego').style.display = 'block';
     document.getElementById('mensaje-espera').style.display = 'none';
+    // Limpiar selecciones visuales previas
+    document.querySelectorAll('.selected, .selected-money').forEach(el => el.classList.remove('selected', 'selected-money'));
+    document.getElementById('monto-manual').value = "";
+    opcionElegida = null;
+    montoElegido = 0;
 });
 
-// 3. Resultado de la ronda (GANASTE / PERDISTE) [cite: 66, 149, 411]
+// 3. Resultado de la ronda (GANASTE / PERDISTE) [cite: 66, 149, 411, 433, 436]
 socket.on('round_result', (data) => {
     const ganador = data.ganador;
     const msg = document.getElementById('mensaje-espera');
     
-    // Si el jugador apostó en esta ronda
+    // Si el jugador realizó una apuesta en esta ronda
     if (opcionElegida !== null) {
         msg.style.display = 'block';
         if (String(opcionElegida) === String(ganador)) {
@@ -126,23 +143,20 @@ socket.on('round_result', (data) => {
         }
     }
 
-    // Actualizamos saldo [cite: 34, 149]
+    // Actualizamos saldo con los datos oficiales del servidor [cite: 34, 149, 433]
     if (data.players[miNombre]) {
         currentPuntos = data.players[miNombre].puntos;
         document.getElementById('display-puntos').innerText = "$" + currentPuntos;
     }
-
-    // Después de 4 segundos, devolvemos los botones para la siguiente ronda 
-    setTimeout(() => {
-        document.getElementById('controles-juego').style.display = 'block';
-        msg.style.display = 'none';
-        document.getElementById('monto-manual').value = "";
-        opcionElegida = null;
-        montoElegido = 0;
-    }, 4000);
 });
 
-// 4. Reinicio y expulsión [cite: 307, 335, 365, 394]
+// 4. Sincronización de puntos tras confirmar apuesta [cite: 432]
+socket.on('update_puntos', (data) => {
+    currentPuntos = data.puntos;
+    document.getElementById('display-puntos').innerText = "$" + data.puntos;
+});
+
+// 5. Reinicio y expulsión [cite: 307, 335, 365, 394, 434, 435]
 socket.on('game_reset_done', () => {
     localStorage.removeItem('casino_name');
     window.location.href = "/";
