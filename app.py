@@ -22,8 +22,8 @@ def index():
 
 @app.route('/juego')
 def juego():
-    if 'user' not in session: return redirect(url_for('index'))
-    return render_template('juego.html', user=session['user'])
+    # Eliminamos el "if 'user' not in session" para que te deje entrar
+    return render_template('juego.html')
 
 @app.route('/admin_panel_secret')
 def admin():
