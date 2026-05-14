@@ -29,10 +29,20 @@ def admin(): return render_template('admin.html')
 @socketio.on('join')
 def handle_join(data):
     name = data['name']
+    if not name: return # Seguridad por si el nombre llega vacío
+
     if name not in players:
+        # Iniciamos al jugador
         players[name] = {'puntos': 1000, 'aposto': False, 'apuesta_valor': 0, 'opcion': None}
+    
+    # Enviamos datos privados al jugador que entra
     emit('update_data', {'puntos': players[name]['puntos'], 'game': current_game}, broadcast=False)
-    emit('round_result', {'ganador': 'Actualizando...', 'players': players}, broadcast=True)
+    
+    # ENVIAR A TODOS: Esto hace que el nombre aparezca en tu lista de Admin al instante
+    emit('round_result', {'ganador': 'Esperando...', 'players': players}, broadcast=True)
+    
+    # Actualizamos el contador de apuestas (ej: 0/15)
+    emit('actualizar_contador', {'conteo': obtener_estado_apuestas()}, broadcast=True)
 
 @socketio.on('place_bet')
 def handle_bet(data):
