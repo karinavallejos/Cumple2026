@@ -6,7 +6,7 @@ from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'cumple_secreto_2026'
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
 
 # Base de datos en memoria (para 3 horas está perfecto)
 players = {} # {nombre: {puntos: 1000, aposto: False, apuesta_valor: 0, opcion: None}}
