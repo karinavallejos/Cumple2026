@@ -16,6 +16,21 @@ socket.on('connect', () => {
 });
 
 /**
+ * Función visual para el estado de quiebra (BANCA ROTA)
+ * Bloquea botones y muestra el mensaje de error
+ */
+function mostrarBancaRota() {
+    const msgArea = document.getElementById('mensaje-espera');
+    const controles = document.getElementById('controles-juego');
+    
+    if (controles) controles.style.display = 'none';
+    if (msgArea) {
+        msgArea.style.display = 'block';
+        msgArea.innerHTML = "<h1 style='color: #ff4444; font-size: 3rem;'>¡BANCA ROTA! 💀</h1><p style='color: white;'>Has perdido todo tu dinero. <br>Espera a un bono del host o un reinicio.</p>";
+    }
+}
+
+/**
  * Genera los botones de juego dinámicamente
  */
 function renderizarBotones(opciones) {
@@ -30,29 +45,21 @@ function renderizarBotones(opciones) {
         btn.onclick = () => seleccionarOpcion(op, btn);
         contenedor.appendChild(btn);
     });
-    
     opcionElegida = null; 
 }
 
-/**
- * Maneja la selección visual
- */
 function seleccionarOpcion(val, elemento) {
     opcionElegida = val;
     document.querySelectorAll('.opcion-btn').forEach(b => b.classList.remove('selected'));
     elemento.classList.add('selected');
 }
 
-/**
- * Captura el monto de apuesta
- */
 function seleccionarPlata(monto, elemento) {
     if (monto === 'ALL') {
         montoElegido = currentPuntos;
     } else if (monto !== "") {
         montoElegido = parseInt(monto);
     }
-
     document.querySelectorAll('.apuesta-btn').forEach(b => b.classList.remove('selected-money'));
     if (elemento && elemento.classList.contains('apuesta-btn')) {
         elemento.classList.add('selected-money');
@@ -61,12 +68,10 @@ function seleccionarPlata(monto, elemento) {
 }
 
 /**
- * ENVÍO FINAL CON VERIFICACIÓN DE BANCA ROTA
+ * ENVÍO FINAL: Bloquea si no hay dinero suficiente
  */
 function confirmarApuesta() {
-    // 1. Verificar si el jugador está en 0
     if (currentPuntos <= 0) {
-        alert("¡Estás en la quiebra! No puedes apostar.");
         mostrarBancaRota();
         return;
     }
@@ -75,23 +80,11 @@ function confirmarApuesta() {
     const manual = document.getElementById('monto-manual').value;
     if (manual > 0) finalMonto = parseInt(manual);
 
-    if (finalMonto < 50) {
-        alert("La apuesta mínima es de $50.");
-        return;
-    }
-
-    if (!opcionElegida) {
-        alert("Elige una opción primero.");
-        return;
-    }
+    if (finalMonto < 50) { alert("La apuesta mínima es de $50."); return; }
+    if (!opcionElegida) { alert("Elige una opción primero."); return; }
 
     if (confirm(`¿Estás seguro de apostar $${finalMonto} al ${opcionElegida}?`)) {
-        socket.emit('place_bet', { 
-            name: miNombre, 
-            monto: finalMonto, 
-            opcion: opcionElegida 
-        });
-
+        socket.emit('place_bet', { name: miNombre, monto: finalMonto, opcion: opcionElegida });
         document.getElementById('controles-juego').style.display = 'none';
         const msg = document.getElementById('mensaje-espera');
         msg.innerHTML = "⌛ APUESTA ENVIADA... <br> ESPERANDO AL ADMIN";
@@ -99,24 +92,14 @@ function confirmarApuesta() {
     }
 }
 
-/**
- * Función visual para el estado de quiebra
- */
-function mostrarBancaRota() {
-    document.getElementById('controles-juego').style.display = 'none';
-    const msgArea = document.getElementById('mensaje-espera');
-    msgArea.style.display = 'block';
-    msgArea.innerHTML = "<h1 style='color: #ff4444; font-size: 3.5rem;'>¡BANCA ROTA! 💀</h1><p>Has perdido todo tu dinero. Espera a un bono del host o un reinicio.</p>";
-}
-
 // --- ESCUCHADORES (SOCKETS) ---
 
+// 1. Carga inicial: Si el jugador entra con 0 puntos, ve Banca Rota de inmediato
 socket.on('update_data', (data) => {
     currentPuntos = data.puntos;
     document.getElementById('display-puntos').innerText = "$" + currentPuntos;
     document.getElementById('ronda-display').innerText = "RONDA " + data.game.ronda;
     
-    // Si entra y ya tiene 0 puntos, bloqueamos de inmediato
     if (currentPuntos <= 0) {
         mostrarBancaRota();
     } else if (data.game.status === "esperando") {
@@ -131,35 +114,17 @@ socket.on('update_data', (data) => {
     }
 });
 
-socket.on('new_game', (game) => {
-    // Si al iniciar nueva ronda el jugador tiene 0, no lo dejamos jugar
-    if (currentPuntos <= 0) {
-        mostrarBancaRota();
-        return;
-    }
-    
-    renderizarBotones(game.options);
-    document.getElementById('ronda-display').innerText = "RONDA " + game.ronda;
-    document.getElementById('controles-juego').style.display = 'block';
-    document.getElementById('mensaje-espera').style.display = 'none';
-    
-    document.querySelectorAll('.selected, .selected-money').forEach(el => el.classList.remove('selected', 'selected-money'));
-    document.getElementById('monto-manual').value = "";
-    opcionElegida = null;
-    montoElegido = 0;
-});
-
+// 2. Resultado de la ronda: Muestra premios o multa por inactividad
 socket.on('round_result', (data) => {
     const ganador = data.ganador;
     const msgArea = document.getElementById('mensaje-espera');
     
-    if (ganador === "Esperando..." || ganador === "Actualizando..." || ganador === "REINICIO DE DINERO") {
-        return;
-    }
+    if (ganador === "Esperando..." || ganador === "Actualizando..." || ganador === "REINICIO DE DINERO") return;
 
     msgArea.style.display = 'block';
     document.getElementById('controles-juego').style.display = 'none';
 
+    // Mostrar el resultado de la apuesta
     if (opcionElegida !== null) {
         if (String(opcionElegida) === String(ganador)) {
             msgArea.innerHTML = "<h1 style='color: lime;'>¡GANASTE! 🎉</h1>";
@@ -170,40 +135,51 @@ socket.on('round_result', (data) => {
         msgArea.innerHTML = "<h1 style='color: #ffa500;'>PIERDE $50 POR NO APOSTAR 💸</h1>";
     }
 
+    // Actualizar dinero real del servidor
     if (data.players[miNombre]) {
         currentPuntos = data.players[miNombre].puntos;
         document.getElementById('display-puntos').innerText = "$" + currentPuntos;
     }
 
-    // Verificamos si después de esta ronda se quedó en 0
+    // Esperar 4 segundos y decidir qué mostrar después
     setTimeout(() => {
         if (currentPuntos <= 0) {
-            mostrarBancaRota();
+            mostrarBancaRota(); // Si se quedó en 0 tras la ronda, mostrar Banca Rota
         } else {
             msgArea.innerHTML = "<h2 style='color: gold;'>RONDA TERMINADA</h2><p>Espera a que el host inicie la siguiente... 🍀</p>";
         }
     }, 4000);
 });
 
+// 3. Sincronización de dinero (Regalos del admin o apuestas confirmadas)
 socket.on('update_puntos', (data) => {
     currentPuntos = data.puntos;
     document.getElementById('display-puntos').innerText = "$" + currentPuntos;
-    // Si un regalo del admin le quita el 0, desbloqueamos la pantalla
-    if (currentPuntos > 0 && document.getElementById('mensaje-espera').innerText.includes("BANCA ROTA")) {
-        document.getElementById('mensaje-espera').style.display = 'none';
-        document.getElementById('controles-juego').style.display = 'block';
+    
+    // Si el jugador tenía Banca Rota y recibió un regalo del admin, desbloquear pantalla
+    if (currentPuntos > 0) {
+        const msgText = document.getElementById('mensaje-espera').innerText;
+        if (msgText.includes("BANCA ROTA")) {
+            document.getElementById('mensaje-espera').style.display = 'none';
+            document.getElementById('controles-juego').style.display = 'block';
+        }
+    } else {
+        mostrarBancaRota();
     }
 });
 
-socket.on('game_reset_done', () => {
-    localStorage.removeItem('casino_name');
-    window.location.href = "/";
+// 4. Cambios de juego (Solo para jugadores con dinero)
+socket.on('new_game', (game) => {
+    if (currentPuntos <= 0) {
+        mostrarBancaRota();
+        return;
+    }
+    document.getElementById('ronda-display').innerText = "RONDA " + game.ronda;
+    document.getElementById('controles-juego').style.display = 'block';
+    document.getElementById('mensaje-espera').style.display = 'none';
+    renderizarBotones(game.options);
+    document.querySelectorAll('.selected, .selected-money').forEach(el => el.classList.remove('selected', 'selected-money'));
 });
 
-socket.on('player_kicked', (data) => {
-    if (miNombre === data.target) {
-        localStorage.removeItem('casino_name');
-        alert("Has sido eliminado por el administrador.");
-        window.location.href = "/";
-    }
-});
+socket.on('game_reset_done', () => { localStorage.removeItem('casino_name'); window.location.href = "/"; });
+socket.on('player_kicked', (data) => { if (miNombre === data.target) { localStorage.removeItem('casino_name'); window.location.href = "/"; } });
