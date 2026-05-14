@@ -3,6 +3,7 @@ monkey.patch_all()
 
 from flask import Flask, render_template, request, session, redirect, url_for
 from flask_socketio import SocketIO, emit
+import random
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'cumple_secreto_2026'
@@ -68,6 +69,21 @@ def resolve(data):
             
     emit('round_result', {'ganador': ganador, 'players': players}, broadcast=True)
 
+# 1. Función para REINICIAR TODO
+@socketio.on('admin_reset_all')
+def handle_reset_all():
+    global players
+    players.clear() # Borra a todos de la lista [cite: 322, 327]
+    emit('game_reset_done', broadcast=True) # Avisa a los celulares [cite: 322, 328]
+
+# 2. Función para DAR DINERO AL AZAR
+@socketio.on('admin_give_random')
+def handle_random_money():
+    for user in players:
+        regalo = random.randint(50, 500) # Monto al azar entre 50 y 500
+        players[user]['puntos'] += regalo [cite: 315]
+    # Enviamos la lista actualizada a todos para que vean su nuevo saldo
+    emit('round_result', {'ganador': '¡BONO SORPRESA!', 'players': players}, broadcast=True) [cite: 52, 66]
 @socketio.on('admin_change_view')
 def change_view(data):
     current_game['view'] = data['view']
