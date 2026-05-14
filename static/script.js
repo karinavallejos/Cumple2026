@@ -49,15 +49,30 @@ function seleccionarOpcion(val, elemento) {
 /**
  * Captura el monto de los botones amarillos o del input manual [cite: 403, 404, 511, 512]
  */
-function seleccionarPlata(monto, elemento) {
-    // Si el monto viene de los botones predefinidos
-    if (monto === 'ALL') {
-        montoElegido = currentPuntos;
-        alert("¡Has seleccionado TODO TU DINERO!");
-    } else if (monto !== "") {
-        montoElegido = parseInt(monto);
+function confirmarApuesta() {
+    let finalMonto = montoElegido;
+    const manual = document.getElementById('monto-manual').value;
+    if (manual > 0) finalMonto = parseInt(manual);
+
+    // NUEVA REGLA: Apuesta mínima de 50
+    if (finalMonto < 50) {
+        alert("La apuesta mínima es de $50.");
+        return;
     }
 
+    if (!opcionElegida) {
+        alert("Elige una opción primero.");
+        return;
+    }
+
+    if (confirm(`¿Apostar $${finalMonto} al ${opcionElegida}?`)) {
+        socket.emit('place_bet', { name: miNombre, monto: finalMonto, opcion: opcionElegida });
+        
+        document.getElementById('controles-juego').style.display = 'none';
+        document.getElementById('mensaje-espera').style.display = 'block';
+        document.getElementById('mensaje-espera').innerText = "⌛ APUESTA ENVIADA...";
+    }
+}
     // Feedback visual para los botones amarillos [cite: 511]
     document.querySelectorAll('.apuesta-btn').forEach(b => b.classList.remove('selected-money'));
     if (elemento && elemento.classList.contains('apuesta-btn')) {
