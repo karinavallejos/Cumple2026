@@ -48,21 +48,21 @@ def ranking():
     return render_template('ranking.html', ranking=jugadores_ordenados)
 
 # --- EVENTOS DE SOCKET (JUGADORES) ---
-
 @socketio.on('join')
 def handle_join(data):
     name = data.get('name')
     if not name: return
 
     if name not in players:
-        # Inicialización estándar de puntos y estado
         players[name] = {'puntos': 1000, 'aposto': False, 'apuesta_valor': 0, 'opcion': None}
     
-    # Envía datos al jugador que entra (puntos y estado del juego)
-    emit('update_data', {'puntos': players[name]['puntos'], 'game': current_game}, broadcast=False)
+    # Enviamos también la lista de 'players' para el ranking
+    emit('update_data', {
+        'puntos': players[name]['puntos'], 
+        'game': current_game,
+        'players': players # <--- CLAVE: Enviamos a todos para el modal
+    }, broadcast=False)
     
-    # Actualiza la lista del Admin y el contador X/Total
-    emit('round_result', {'ganador': 'Actualizando...', 'players': players}, broadcast=True)
     emit('actualizar_contador', {'conteo': obtener_estado_apuestas()}, broadcast=True)
 
 @socketio.on('place_bet')
@@ -171,6 +171,7 @@ def handle_reset_all():
     global players
     players.clear() 
     emit('game_reset_done', broadcast=True)
+
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
