@@ -26,7 +26,51 @@
         <button onclick="resolver()" style="background: lime;">¡PAGAR APUESTAS!</button>
         <p><i>Si no apostaron, se les restarán 50 automáticamente.</i></p>
     </div>
+    <div class="control-group">
+    <h3>👥 Jugadores Conectados</h3>
+    <ul id="lista-admin-jugadores" style="text-align: left; list-style: none; padding: 0;">
+        </ul>
+</div>
 
+<div class="control-group">
+    <h3>🎁 Acciones Especiales</h3>
+    <button onclick="darDineroAzar()" style="background: cyan; color: black;">
+        REGALAR DINERO AL AZAR
+    </button>
+</div>
+
+<div class="control-group" style="border-color: red;">
+    <h3>⚠️ REINICIO TOTAL</h3>
+    <button onclick="resetTodo()" style="background: red; color: white;">
+        REINICIAR TODO (BORRAR JUGADORES)
+    </button>
+</div>
+
+<script>
+    const socket = io();
+
+    // Actualiza la lista de nombres que ves tú en el panel
+    socket.on('round_result', (data) => {
+        const lista = document.getElementById('lista-admin-jugadores');
+        lista.innerHTML = "";
+        Object.keys(data.players).forEach(name => {
+            const li = document.createElement('li');
+            li.innerHTML = `👤 <b>${name}</b>: $${data.players[name].puntos}`;
+            lista.appendChild(li);
+        });
+    });
+
+    function darDineroAzar() {
+        socket.emit('admin_give_random');
+        alert("¡Dinero repartido!");
+    }
+
+    function resetTodo() {
+        if(confirm("¿Seguro? Todos deberán registrarse de nuevo desde el QR.")) {
+            socket.emit('admin_reset_all');
+        }
+    }
+</script>
     <script>
         const socket = io();
         function cambiarVisual(tipo, ops) {
