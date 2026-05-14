@@ -1,0 +1,20 @@
+body { background-color: black; color: white; font-family: 'Arial', sans-serif; text-align: center; }
+.header-vegas { max-width: 300px; margin: 20px auto; }
+.balance-card { 
+    background: linear-gradient(to bottom, #800000, #4d0000);
+    border: 4px solid #ffcc00; border-radius: 50px;
+    padding: 10px 40px; display: inline-block; font-size: 3rem; font-weight: bold;
+    box-shadow: 0 0 15px #ffcc00; margin-bottom: 30px;
+}
+.grid-opciones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px; }
+.opcion-btn { 
+    background-color: #a51d1d; color: white; font-size: 3rem; 
+    border: none; padding: 20px; cursor: pointer;
+}
+.opcion-btn.selected { border: 5px solid yellow; }
+.apuesta-container { display: flex; justify-content: space-around; margin-top: 30px; }
+.apuesta-btn {
+    background-color: #ffcc00; color: black; border-radius: 50%;
+    width: 80px; height: 80px; font-weight: bold; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+}
