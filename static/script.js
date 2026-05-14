@@ -7,16 +7,16 @@ let currentPuntos = 1000;
 let opcionElegida = null;
 let montoElegido = 0;
 
-// Al conectar, informamos al servidor quién es este jugador [cite: 36, 65, 416]
+// Al conectar, informamos al servidor quién es este jugador
 socket.on('connect', () => {
     if (!miNombre) {
-        window.location.href = "/"; // Si no hay nombre, al login [cite: 48, 416]
+        window.location.href = "/"; // Si no hay nombre, al login
     }
     socket.emit('join', { name: miNombre });
 });
 
 /**
- * Genera los botones de juego dinámicamente (Dados, Cartas, etc.) [cite: 58, 59, 417]
+ * Genera los botones de juego dinámicamente (Dados, Cartas, etc.)
  */
 function renderizarBotones(opciones) {
     const contenedor = document.getElementById('contenedor-opciones');
@@ -27,92 +27,68 @@ function renderizarBotones(opciones) {
         const btn = document.createElement('button');
         btn.className = 'opcion-btn';
         btn.innerText = op;
-        // Al hacer clic, se marca visualmente [cite: 60, 400, 418]
         btn.onclick = () => seleccionarOpcion(op, btn);
         contenedor.appendChild(btn);
     });
     
-    opcionElegida = null; // Reiniciar selección para nueva ronda [cite: 419]
+    opcionElegida = null; // Reiniciar selección para nueva ronda
 }
 
 /**
- * Maneja el borde amarillo de selección de números o pintas [cite: 60, 400, 421]
+ * Maneja el borde amarillo de selección de números o pintas
  */
 function seleccionarOpcion(val, elemento) {
     opcionElegida = val;
-    // Quitamos la clase 'selected' de todos los botones [cite: 400, 422]
     document.querySelectorAll('.opcion-btn').forEach(b => b.classList.remove('selected'));
-    // Añadimos el borde amarillo al seleccionado [cite: 35, 400, 423]
     elemento.classList.add('selected');
 }
 
 /**
- * Captura el monto de los botones amarillos o del input manual [cite: 403, 404, 511, 512]
+ * Captura el monto de los botones amarillos o del input manual
+ */
+function seleccionarPlata(monto, elemento) {
+    if (monto === 'ALL') {
+        montoElegido = currentPuntos;
+    } else if (monto !== "") {
+        montoElegido = parseInt(monto);
+    }
+
+    // Feedback visual para los botones amarillos
+    document.querySelectorAll('.apuesta-btn').forEach(b => b.classList.remove('selected-money'));
+    if (elemento && elemento.classList.contains('apuesta-btn')) {
+        elemento.classList.add('selected-money');
+        document.getElementById('monto-manual').value = ""; // Limpiamos manual
+    }
+}
+
+/**
+ * ENVÍO FINAL: Se ejecuta al presionar el botón VERDE
  */
 function confirmarApuesta() {
     let finalMonto = montoElegido;
     const manual = document.getElementById('monto-manual').value;
     if (manual > 0) finalMonto = parseInt(manual);
 
-    // NUEVA REGLA: Apuesta mínima de 50
+    // REGLA: Apuesta mínima de 50
     if (finalMonto < 50) {
         alert("La apuesta mínima es de $50.");
         return;
     }
 
     if (!opcionElegida) {
-        alert("Elige una opción primero.");
+        alert("Elige una opción (Número o Pinta) primero.");
         return;
     }
 
-    if (confirm(`¿Apostar $${finalMonto} al ${opcionElegida}?`)) {
-        socket.emit('place_bet', { name: miNombre, monto: finalMonto, opcion: opcionElegida });
-        
-        document.getElementById('controles-juego').style.display = 'none';
-        document.getElementById('mensaje-espera').style.display = 'block';
-        document.getElementById('mensaje-espera').innerText = "⌛ APUESTA ENVIADA...";
-    }
-}
-    // Feedback visual para los botones amarillos [cite: 511]
-    document.querySelectorAll('.apuesta-btn').forEach(b => b.classList.remove('selected-money'));
-    if (elemento && elemento.classList.contains('apuesta-btn')) {
-        elemento.classList.add('selected-money');
-        // Limpiamos el input manual si se usa un botón para no confundir
-        document.getElementById('monto-manual').value = "";
-    }
-}
-
-/**
- * ENVÍO FINAL: Se ejecuta al presionar el botón VERDE [cite: 316, 402, 408, 441, 513]
- */
-function confirmarApuesta() {
-    // Revisamos si hay algo escrito en el cuadro manual por si se escribió después de elegir un botón
-    const montoManual = document.getElementById('monto-manual').value;
-    if (montoManual > 0) {
-        montoElegido = parseInt(montoManual);
-    }
-
-    // Validaciones de seguridad [cite: 44, 67, 427, 428]
-    if (opcionElegida === null) {
-        alert("Primero elige un número o pinta."); return;
-    }
-    if (montoElegido <= 0) {
-        alert("Elige o escribe un monto para apostar."); return;
-    }
-    if (montoElegido > currentPuntos) {
-        alert("No tienes dinero suficiente."); return;
-    }
-
-    // Preguntar si está seguro antes de procesar 
-    if (confirm(`¿Estás seguro de apostar $${montoElegido} al ${opcionElegida}?`)) {
-        // Enviamos al servidor [cite: 36, 373, 429]
+    // Preguntar si está seguro antes de procesar
+    if (confirm(`¿Estás seguro de apostar $${finalMonto} al ${opcionElegida}?`)) {
         socket.emit('place_bet', { 
             name: miNombre, 
-            monto: montoElegido, 
+            monto: finalMonto, 
             opcion: opcionElegida 
         });
 
-        // BLOQUEO DE PANTALLA: Ocultamos controles y mostramos estado "Pending" [cite: 402, 408, 442, 514]
+        // BLOQUEO DE PANTALLA: Pending
         document.getElementById('controles-juego').style.display = 'none';
         const msg = document.getElementById('mensaje-espera');
         msg.innerHTML = "⌛ APUESTA ENVIADA... <br> ESPERANDO AL ADMIN";
@@ -122,42 +98,37 @@ function confirmarApuesta() {
 
 // --- ESCUCHADORES (SOCKETS) ---
 
-// 1. Actualización de saldo inicial y ronda [cite: 34, 66, 430, 510]
+// 1. Actualización inicial (Clave para que carguen los botones al entrar)
 socket.on('update_data', (data) => {
     currentPuntos = data.puntos;
     document.getElementById('display-puntos').innerText = "$" + currentPuntos;
     document.getElementById('ronda-display').innerText = "RONDA " + data.game.ronda;
+    
+    // Si ya hay un juego activo en el servidor, dibujamos los botones de inmediato
+    if (data.game && data.game.options) {
+        renderizarBotones(data.game.options);
+    }
 });
 
-// 2. Cambio de juego o nueva ronda habilitada [cite: 54, 149, 431, 508]
+// 2. Cambio de juego o nueva ronda
 socket.on('new_game', (game) => {
     renderizarBotones(game.options);
     document.getElementById('ronda-display').innerText = "RONDA " + game.ronda;
-    // Asegurar que los controles vuelvan a verse cuando el admin inicie nueva ronda [cite: 431]
     document.getElementById('controles-juego').style.display = 'block';
     document.getElementById('mensaje-espera').style.display = 'none';
-    // Limpiar selecciones visuales previas
+    
+    // Reset visual
     document.querySelectorAll('.selected, .selected-money').forEach(el => el.classList.remove('selected', 'selected-money'));
     document.getElementById('monto-manual').value = "";
     opcionElegida = null;
     montoElegido = 0;
 });
 
-socket.on('round_result', (data) => {
-    // Si el admin reseteó el dinero, el jugador verá sus $1000 de nuevo
-    if (data.players[miNombre]) {
-        currentPuntos = data.players[miNombre].puntos;
-        document.getElementById('display-puntos').innerText = "$" + currentPuntos;
-    }
-    // ... (resto de tu lógica de GANASTE/PERDISTE)
-});
-
-// 3. Resultado de la ronda (GANASTE / PERDISTE) [cite: 66, 149, 411, 433, 436]
+// 3. Resultado de la ronda (GANASTE / PERDISTE / PENALIZACIÓN)
 socket.on('round_result', (data) => {
     const ganador = data.ganador;
     const msgArea = document.getElementById('mensaje-espera');
     
-    // Mostramos el área de mensaje para todos
     msgArea.style.display = 'block';
     document.getElementById('controles-juego').style.display = 'none';
 
@@ -169,33 +140,24 @@ socket.on('round_result', (data) => {
             msgArea.innerHTML = "<h1 style='color: red;'>MÁS SUERTE PARA LA PRÓXIMA 💀</h1>";
         }
     } else {
-        // SI NO APOSTÓ: Mostrar mensaje de penalización
+        // SI NO APOSTÓ: Mensaje de penalización
         msgArea.innerHTML = "<h1 style='color: #ffa500;'>PIERDE $50 POR NO APOSTAR 💸</h1>";
     }
 
-    // Actualizar dinero (que ya viene restado del servidor)
-    if (data.players[miNombre]) {
-        currentPuntos = data.players[miNombre].puntos;
-        document.getElementById('display-puntos').innerText = "$" + currentPuntos;
-    }
-
-    // El timeout de 4 segundos limpia todo y regresa a los botones
-});
-
-    // Actualizamos saldo con los datos oficiales del servidor [cite: 34, 149, 433]
+    // Sincronizar dinero del servidor
     if (data.players[miNombre]) {
         currentPuntos = data.players[miNombre].puntos;
         document.getElementById('display-puntos').innerText = "$" + currentPuntos;
     }
 });
 
-// 4. Sincronización de puntos tras confirmar apuesta [cite: 432]
+// 4. Sincronización tras apuesta confirmada
 socket.on('update_puntos', (data) => {
     currentPuntos = data.puntos;
     document.getElementById('display-puntos').innerText = "$" + data.puntos;
 });
 
-// 5. Reinicio y expulsión [cite: 307, 335, 365, 394, 434, 435]
+// 5. Reinicio y expulsión
 socket.on('game_reset_done', () => {
     localStorage.removeItem('casino_name');
     window.location.href = "/";
