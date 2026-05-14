@@ -72,7 +72,7 @@
             🔥 BORRAR TODO (Cerrar sesiones y borrar nombres)
         </button>
     </div>
-
+    
     <script>
         const socket = io();
 
@@ -99,7 +99,16 @@
                 contenedor.appendChild(btn);
             });
         });
-
+        // Dentro del <script> de admin.html
+        socket.on('actualizar_contador', (data) => {
+            const el = document.getElementById('contador-apuestas');
+            if (el) {
+                el.innerText = data.conteo;
+                // Efecto visual opcional: que brille cuando cambie
+                el.style.color = "#00ff00"; 
+                setTimeout(() => { el.style.color = "#00ffff"; }, 500);
+            }
+        });
         // 3. Actualizar lista de jugadores y dropdown
         socket.on('round_result', (data) => {
             const lista = document.getElementById('lista-admin-jugadores');
