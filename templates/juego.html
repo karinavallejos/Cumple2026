@@ -6,55 +6,137 @@
     <title>Casino Vegas - Juego</title>
     <link rel="stylesheet" href="/static/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-</head>
-<body style="background-color: black; color: white; margin: 0; display: flex; flex-direction: column; min-height: 100vh;">
+    <style>
+        /* Estilo del Saldo: Óvalo achatado dorado */
+        .puntos-header {
+            display: inline-block;
+            margin: 5px auto;
+            padding: 5px 45px;
+            border: 3px solid gold;
+            border-radius: 50px;
+            background: rgba(255, 215, 0, 0.1);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
 
-    <!-- CABECERA PERMANENTE: Saldo y Ronda -->
-    <div style="padding: 15px; border-bottom: 2px solid gold; background: #111; text-align: center;">
-        <div id="ronda-display" style="color: gold; font-size: 0.9rem; font-weight: bold;">RONDA 1</div>
-        <div id="display-puntos" style="font-size: 2.5rem; color: #00ff00; font-weight: bold; text-shadow: 0 0 10px rgba(0,255,0,0.5);">$1000</div>
+        #display-puntos {
+            font-size: 2.6rem;
+            color: #00ff00;
+            font-weight: bold;
+            text-shadow: 2px 2px 5px black;
+        }
+
+        /* Cuadrícula de apuestas: 3 columnas simétricas */
+        .grid-apuestas {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 15px;
+            width: 100%;
+            max-width: 340px;
+            margin: 20px auto;
+            justify-items: center;
+        }
+
+        .circulo-btn {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            border: 2px solid gold;
+            background: #222;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .circulo-btn.selected-money {
+            background: gold;
+            color: black;
+            box-shadow: 0 0 15px gold;
+            transform: scale(1.05);
+        }
+
+        .all-in {
+            background: #ff4444 !important;
+            border-color: white !important;
+            color: white !important;
+        }
+
+        #monto-manual {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            border: 2px solid gold;
+            background: #111;
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            outline: none;
+        }
+
+        .btn-confirmar {
+            width: 100%;
+            max-width: 320px;
+            height: 55px;
+            background: #00ff00;
+            color: black;
+            font-weight: bold;
+            font-size: 1.3rem;
+            border-radius: 30px;
+            border: none;
+            margin-top: 15px;
+            box-shadow: 0 5px 15px rgba(0,255,0,0.4);
+        }
+    </style>
+</head>
+<body style="background-color: black; color: white; margin: 0; display: flex; flex-direction: column; min-height: 100vh; text-align: center;">
+
+    <!-- CABECERA: Logo + Ronda + Óvalo de Dinero -->
+    <div style="padding: 10px; background: #111; border-bottom: 2px solid #333;">
+        <div class="header-vegas" style="margin-bottom: 10px;">
+            <img src="/static/logo-vegas.svg" alt="Las Vegas" style="width: 180px; max-width: 50vw;">
+        </div>
+        <div id="ronda-display" style="color: gold; font-weight: bold; font-size: 0.9rem; margin-bottom: 5px;">RONDA 1</div>
+        <div class="puntos-header">
+            <span id="display-puntos">$1000</span>
+        </div>
     </div>
 
-    <!-- ÁREA CENTRAL DINÁMICA -->
-    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;">
+    <!-- CUERPO CENTRAL -->
+    <div style="flex: 1; padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
         
-        <!-- Mensajes de estado (Ganaste, Perdiste, Espera, Banca Rota) -->
-        <div id="mensaje-espera" style="display: none; text-align: center;">
-            <!-- El contenido cambia dinámicamente por JS -->
-        </div>
+        <div id="mensaje-espera" style="display: none;"></div>
 
-        <!-- Controles de apuesta (Se ocultan al apostar) -->
-        <div id="controles-juego" style="width: 100%; max-width: 400px; text-align: center;">
-            <h3 style="color: gold; margin-bottom: 15px;">ELIGE TU JUGADA</h3>
-            <div id="contenedor-opciones" class="grid-opciones">
-                <!-- Botones de Dados/Cartas se generan aquí -->
-            </div>
+        <div id="controles-juego" style="width: 100%;">
+            <h3 style="color: gold; text-transform: uppercase; margin-bottom: 15px;">Elige tu opción</h3>
+            <div id="contenedor-opciones" class="grid-opciones"></div>
 
-            <hr style="border: 0.5px solid #333; margin: 20px 0;">
+            <hr style="border: 0.5px solid #333; width: 100%; margin: 20px 0;">
 
-            <h3 style="color: gold; margin-bottom: 15px;">¿CUÁNTO APUESTAS?</h3>
-            <div class="grid-montos">
-                <button class="apuesta-btn" onclick="seleccionarPlata(50, this)">$50</button>
-                <button class="apuesta-btn" onclick="seleccionarPlata(100, this)">$100</button>
-                <button class="apuesta-btn" onclick="seleccionarPlata(200, this)">$200</button>
-                <button class="apuesta-btn" onclick="seleccionarPlata(500, this)">$500</button>
-                <button class="apuesta-btn" onclick="seleccionarPlata('ALL', this)" style="background: #ff4444; color: white;">ALL IN</button>
+            <h3 style="color: gold; text-transform: uppercase; margin-bottom: 15px;">Monto de Apuesta</h3>
+            
+            <!-- Grilla 3x2: Centrada y simétrica -->
+            <div class="grid-apuestas">
+                <button class="circulo-btn apuesta-btn" onclick="seleccionarPlata(50, this)">$50</button>
+                <button class="circulo-btn apuesta-btn" onclick="seleccionarPlata(100, this)">$100</button>
+                <button class="circulo-btn apuesta-btn" onclick="seleccionarPlata(200, this)">$200</button>
                 
-                <!-- Input manual estilo circular -->
-                <input type="number" id="monto-manual" placeholder="OTRO" 
-                       style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid gold; background: #222; color: white; text-align: center; font-weight: bold;">
+                <button class="circulo-btn apuesta-btn" onclick="seleccionarPlata(500, this)">$500</button>
+                <button class="circulo-btn apuesta-btn all-in" onclick="seleccionarPlata('ALL', this)">ALL IN</button>
+                <input type="number" id="monto-manual" placeholder="OTRO" oninput="seleccionarPlata(this.value, this)">
             </div>
 
-            <button onclick="confirmarApuesta()" 
-                    style="margin-top: 25px; width: 100%; height: 60px; background: #00ff00; color: black; font-weight: bold; font-size: 1.2rem; border-radius: 10px; border: none; box-shadow: 0 4px 15px rgba(0,255,0,0.3);">
-                CONFIRMAR APUESTA
+            <button onclick="confirmarApuesta()" class="btn-confirmar">
+                APOSTAR AHORA 🎰
             </button>
         </div>
     </div>
 
-    <!-- BOTÓN DE RANKING SIEMPRE VISIBLE -->
-    <div style="padding: 20px; text-align: center; background: #111; border-top: 1px solid #333;">
-        <a href="/ranking" style="text-decoration: none; color: gold; font-weight: bold; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 10px;">
+    <!-- RANKING PERMANENTE EN EL PIE -->
+    <div style="padding: 15px; background: #0a0a0a; border-top: 1px solid #333;">
+        <a href="/ranking" style="text-decoration: none; color: gold; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px;">
             <span>🏆</span> VER TABLA DE POSICIONES
         </a>
     </div>
