@@ -1,25 +1,138 @@
-body { background-color: black; color: white; font-family: 'Arial', sans-serif; text-align: center; }
-.header-vegas { max-width: 300px; margin: 20px auto; }
+/* Estilos Generales */
+body { 
+    margin: 0; 
+    padding: 0; 
+    background-color: black; 
+    color: white; 
+    font-family: 'Arial', sans-serif; 
+    text-align: center; 
+    overflow-x: hidden;
+}
+
+/* 1. Logo pegado arriba y dinero inmediatamente abajo */
+.header-vegas { 
+    margin-top: 0; 
+    padding: 5px 0; /* Espacio mínimo arriba */
+}
+
+.header-vegas img { 
+    width: 180px; 
+    max-width: 60vw; 
+}
+
+#ronda-display { 
+    color: gold; 
+    margin: 2px 0; 
+    font-size: 1.1rem; 
+    text-shadow: 1px 1px 2px black;
+}
+
 .balance-card { 
     background: linear-gradient(to bottom, #800000, #4d0000);
-    border: 4px solid #ffcc00; border-radius: 50px;
-    padding: 10px 40px; display: inline-block; font-size: 3rem; font-weight: bold;
-    box-shadow: 0 0 15px #ffcc00; margin-bottom: 30px;
+    border: 4px solid #ffcc00; 
+    border-radius: 50px;
+    padding: 5px 30px; 
+    display: inline-block; 
+    font-size: 2.2rem; 
+    font-weight: bold;
+    box-shadow: 0 0 15px #ffcc00; 
+    margin-top: -5px; /* Pegado al logo */
+    margin-bottom: 15px;
 }
-.grid-opciones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px; }
-.opcion-btn { 
-    background-color: #a51d1d; color: white; font-size: 3rem; 
-    border: none; padding: 20px; cursor: pointer;
-}
-.opcion-btn.selected { border: 5px solid yellow; }
-.apuesta-container { display: flex; justify-content: space-around; margin-top: 30px; }
-.apuesta-btn {
-    background-color: #ffcc00; color: black; border-radius: 50%;
-    width: 80px; height: 80px; font-weight: bold; border: none; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-}
-.opcion-btn.selected { 
-    border: 5px solid #ffcc00 !important; /* Amarillo neón */
+
+/* 2. Feedback visual de selección (Borde Amarillo Neón) */
+/* Se aplica tanto a los números/pintas como a los círculos de dinero */
+.opcion-btn.selected, .apuesta-btn.selected-money {
+    border: 5px solid #ffcc00 !important;
     box-shadow: 0 0 20px #ffcc00;
     transform: scale(1.1);
+    outline: none;
+}
+
+/* 3. Cuadrícula de opciones (Dados/Cartas) */
+.grid-opciones { 
+    display: grid; 
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 10px; 
+    padding: 10px; 
+    max-width: 400px; 
+    margin: 0 auto;
+}
+
+.opcion-btn { 
+    background-color: #a51d1d; 
+    color: white; 
+    font-size: 2.5rem; 
+    border: 2px solid #555; 
+    padding: 15px; 
+    cursor: pointer; 
+    border-radius: 10px;
+    transition: 0.2s;
+}
+
+/* 4. Contenedor de apuestas y Monto Manual */
+.apuesta-container { 
+    display: flex; 
+    justify-content: center; 
+    gap: 12px; 
+    margin-top: 15px; 
+    flex-wrap: wrap; 
+}
+
+.apuesta-btn {
+    background-color: #ffcc00; 
+    color: black; 
+    border-radius: 50%;
+    width: 75px; 
+    height: 75px; 
+    font-weight: bold; 
+    border: none; 
+    cursor: pointer;
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+/* Estilo para el círculo de entrada manual */
+#monto-manual {
+    width: 75px; 
+    height: 75px; 
+    border-radius: 50%; 
+    border: 3px solid gold; 
+    text-align: center; 
+    background: #222; 
+    color: white;
+    font-weight: bold;
+    font-size: 0.9rem;
+    box-sizing: border-box;
+}
+
+/* 5. Botón de confirmar centrado */
+.confirmar-container {
+    display: flex;
+    justify-content: center;
+    margin: 25px 0;
+}
+
+.btn-verde { 
+    background: #00ff00; 
+    color: black; 
+    font-weight: bold; 
+    border: none; 
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 255, 0, 0.3);
+    transition: 0.3s;
+}
+
+.btn-verde:hover {
+    transform: scale(1.05);
+    background: #33ff33;
+}
+
+/* Mensaje de espera y resultados */
+#mensaje-espera {
+    font-weight: bold;
+    text-shadow: 2px 2px 5px black;
+    margin: 20px 0;
 }
