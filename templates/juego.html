@@ -3,47 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Casino - Jugando</title>
+    <title>Casino Vegas - Juego</title>
     <link rel="stylesheet" href="/static/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 </head>
-<body>
-    <div class="header-vegas">
-        <img src="/static/logo-vegas.svg" alt="Las Vegas">
+<body style="background-color: black; color: white; margin: 0; display: flex; flex-direction: column; min-height: 100vh;">
+
+    <!-- CABECERA PERMANENTE: Saldo y Ronda -->
+    <div style="padding: 15px; border-bottom: 2px solid gold; background: #111; text-align: center;">
+        <div id="ronda-display" style="color: gold; font-size: 0.9rem; font-weight: bold;">RONDA 1</div>
+        <div id="display-puntos" style="font-size: 2.5rem; color: #00ff00; font-weight: bold; text-shadow: 0 0 10px rgba(0,255,0,0.5);">$1000</div>
     </div>
 
-    <h2 id="ronda-display">RONDA 1</h2>
-
-    <div class="balance-card">
-        <span id="display-puntos">$1000</span>
-    </div>
-
-    <div id="mensaje-espera" style="display:none; font-size: 2.2rem; margin: 30px 10px; color: cyan; font-weight: bold;">
+    <!-- ÁREA CENTRAL DINÁMICA -->
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;">
+        
+        <!-- Mensajes de estado (Ganaste, Perdiste, Espera, Banca Rota) -->
+        <div id="mensaje-espera" style="display: none; text-align: center;">
+            <!-- El contenido cambia dinámicamente por JS -->
         </div>
 
-    <div id="controles-juego">
-        <h3 id="instruccion">¡Nueva ronda! Elige tu opción:</h3>
-
-        <div class="grid-opciones" id="contenedor-opciones">
+        <!-- Controles de apuesta (Se ocultan al apostar) -->
+        <div id="controles-juego" style="width: 100%; max-width: 400px; text-align: center;">
+            <h3 style="color: gold; margin-bottom: 15px;">ELIGE TU JUGADA</h3>
+            <div id="contenedor-opciones" class="grid-opciones">
+                <!-- Botones de Dados/Cartas se generan aquí -->
             </div>
 
-        <div class="apuesta-container">
-            <button class="apuesta-btn" onclick="seleccionarPlata('ALL', this)">ALL IN!</button>
-            <button class="apuesta-btn" onclick="seleccionarPlata(400, this)">400</button>
-            <button class="apuesta-btn" onclick="seleccionarPlata(200, this)">200</button>
-            
-            <input type="number" id="monto-manual" placeholder="OTRO" oninput="seleccionarPlata(this.value, this)">
-        </div>
+            <hr style="border: 0.5px solid #333; margin: 20px 0;">
 
-        <div class="confirmar-container">
-            <button onclick="confirmarApuesta()" class="btn-verde" style="width: 250px; height: 60px; font-size: 1.4rem; border-radius: 15px; cursor: pointer;">
+            <h3 style="color: gold; margin-bottom: 15px;">¿CUÁNTO APUESTAS?</h3>
+            <div class="grid-montos">
+                <button class="apuesta-btn" onclick="seleccionarPlata(50, this)">$50</button>
+                <button class="apuesta-btn" onclick="seleccionarPlata(100, this)">$100</button>
+                <button class="apuesta-btn" onclick="seleccionarPlata(200, this)">$200</button>
+                <button class="apuesta-btn" onclick="seleccionarPlata(500, this)">$500</button>
+                <button class="apuesta-btn" onclick="seleccionarPlata('ALL', this)" style="background: #ff4444; color: white;">ALL IN</button>
+                
+                <!-- Input manual estilo circular -->
+                <input type="number" id="monto-manual" placeholder="OTRO" 
+                       style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid gold; background: #222; color: white; text-align: center; font-weight: bold;">
+            </div>
+
+            <button onclick="confirmarApuesta()" 
+                    style="margin-top: 25px; width: 100%; height: 60px; background: #00ff00; color: black; font-weight: bold; font-size: 1.2rem; border-radius: 10px; border: none; box-shadow: 0 4px 15px rgba(0,255,0,0.3);">
                 CONFIRMAR APUESTA
             </button>
         </div>
+    </div>
 
-        <div style="margin-top: 25px;">
-            <a href="/ranking" style="color: yellow; text-decoration: none; font-weight: bold;">📊 Ver Tabla de Posiciones</a>
-        </div>
+    <!-- BOTÓN DE RANKING SIEMPRE VISIBLE -->
+    <div style="padding: 20px; text-align: center; background: #111; border-top: 1px solid #333;">
+        <a href="/ranking" style="text-decoration: none; color: gold; font-weight: bold; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <span>🏆</span> VER TABLA DE POSICIONES
+        </a>
     </div>
 
     <script src="/static/script.js"></script>
