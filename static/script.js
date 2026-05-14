@@ -124,3 +124,11 @@ socket.on('game_reset_done', () => {
     alert("El juego se ha reiniciado. Por favor, ingresa de nuevo.");
     window.location.href = "/"; // Los manda al login [cite: 48, 328]
 });
+
+socket.on('player_kicked', (data) => {
+    if (miNombre === data.target) {
+        localStorage.removeItem('casino_name');
+        alert("Has sido eliminado del juego por el administrador.");
+        window.location.href = "/";
+    }
+});
