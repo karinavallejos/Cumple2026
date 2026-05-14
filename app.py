@@ -135,5 +135,15 @@ def handle_reset_money():
         players[user]['apuesta_valor'] = 0
     # Avisamos a todos del nuevo saldo
     emit('round_result', {'ganador': '¡Dinero Reiniciado!', 'players': players}, broadcast=True)
+@app.route('/ranking')
+def ranking():
+    # Convertimos el diccionario en una lista y la ordenamos
+    # 1. Por puntos (descendente: -x[1]['puntos'])
+    # 2. Por nombre (ascendente: x[0]) si hay empate
+    jugadores_ordenados = sorted(
+        players.items(), 
+        key=lambda x: (-x[1]['puntos'], x[0])
+    )
+    return render_template('ranking.html', ranking=jugadores_ordenados)
 if __name__ == '__main__':
     socketio.run(app, debug=True)
