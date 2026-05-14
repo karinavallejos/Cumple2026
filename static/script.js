@@ -118,3 +118,9 @@ socket.on('round_result', (data) => {
     }
     alert("El resultado fue: " + data.ganador);
 });
+// Cuando el admin reinicia, borramos la memoria del celular y los mandamos al inicio
+socket.on('game_reset_done', () => {
+    localStorage.removeItem('casino_name'); // Olvida el nombre [cite: 311, 325]
+    alert("El juego se ha reiniciado. Por favor, ingresa de nuevo.");
+    window.location.href = "/"; // Los manda al login [cite: 48, 328]
+});
