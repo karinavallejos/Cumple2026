@@ -1,9 +1,5 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed May 13 22:07:40 2026
-
-@author: Karina
-"""
+from gevent import monkey
+monkey.patch_all()
 
 from flask import Flask, render_template, request, session, redirect, url_for
 from flask_socketio import SocketIO, emit
