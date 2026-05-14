@@ -18,11 +18,20 @@
         .btn-delete { background: #ff4444; color: white; padding: 5px 10px; font-size: 0.8rem; }
         .btn-resolve { background: #00ff00; color: black; width: 100%; font-size: 1.1rem; margin-top: 10px; }
         .winner-btn { width: 60px; height: 60px; font-size: 1.5rem; margin: 5px; border: 2px solid transparent; }
+        #contador-apuestas { font-size: 3rem; font-weight: bold; color: #00ffff; text-align: center; margin: 10px 0; }
     </style>
 </head>
 <body>
     <h1>🎰 PANEL DE CONTROL DE DINÁMICAS</h1>
 
+    <!-- 1. ESTADO DE LAS APUESTAS (NUEVO) -->
+    <div class="control-group" style="border-color: cyan; background: #0e2a2a;">
+        <h3>📊 Apuestas Confirmadas</h3>
+        <div id="contador-apuestas">0/0</div>
+        <p style="text-align: center; margin: 0; color: cyan;">Esperando a que los invitados confirmen...</p>
+    </div>
+
+    <!-- 2. CAMBIO DE JUEGO -->
     <div class="control-group">
         <h3>1. Cambiar Juego (Visual de Invitados)</h3>
         <button onclick="cambiarVisual('dados', ['1','2','3','4','5','6'])">🎲 ACTIVAR DADOS (1-6)</button>
@@ -30,47 +39,53 @@
         <button onclick="cambiarVisual('especial', ['ROJO','NEGRO'])">🔴 ACTIVAR COLORES</button>
     </div>
 
+    <!-- 3. RESOLVER RONDA -->
     <div class="control-group">
         <h3>2. Resolver Ronda</h3>
         <p>Selecciona el ganador que salió:</p>
         <div id="botones-resolucion" style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 15px;">
-            </div>
+            <!-- Se llena solo al elegir un juego -->
+        </div>
         <input type="text" id="resultadoGanador" placeholder="Ganador seleccionado..." readonly style="width: 100%; text-align: center; background: #444;">
-        <button onclick="resolver()" class="btn-resolve">💵 PAGAR APUESTAS AHORA</button>
+        <button onclick="resolver()" class="btn-resolve">💵 PAGAR Y DESBLOQUEAR PANTALLAS</button>
     </div>
 
-    <div class="control-group">
-        <h3>3. Control de Rondas</h3>
-        <button onclick="siguienteRonda()" style="background: orange; width: 100%; color: black;">
-            🚀 FINALIZAR Y PASAR A SIGUIENTE RONDA
-        </button>
-        <p><i>Usa esto para limpiar las pantallas de los invitados y habilitar nuevas apuestas.</i></p>
-    </div>
-
+    <!-- 4. JUGADORES Y REGALOS -->
     <div class="control-group">
         <h3>👥 Jugadores Conectados</h3>
         <ul id="lista-admin-jugadores"></ul>
-        <hr>
-        <h3>🎁 Dar Dinero a Alguien</h3>
+        <hr style="border: 0.5px solid #444; margin: 15px 0;">
+        <h3>🎁 Gestión de Dinero</h3>
         <select id="select-jugadores"></select>
         <input type="number" id="monto-regalo" placeholder="Monto $" style="width: 80px;">
-        <button onclick="darDineroEspecifico()" style="background: cyan; color: black;">REGALAR</button>
+        <button onclick="darDineroEspecifico()" style="background: cyan; color: black;">DAR REGALO</button>
         <button onclick="darDineroAzar()" style="background: #fff; color: black;">BONO AL AZAR A TODOS</button>
     </div>
 
+    <!-- 5. ZONA DE REINICIOS -->
     <div class="control-group" style="border-color: #ff4444;">
-        <h3 style="color: #ff4444;">⚠️ Zona de Peligro</h3>
-        <button onclick="resetTodo()" style="background: #ff4444; color: white; width: 100%;">REINICIAR TODO EL JUEGO</button>
+        <h3 style="color: #ff4444;">⚠️ Gestión de Reinicios</h3>
+        <button onclick="resetDinero()" style="background: #ffcc00; color: black; width: 100%; margin-bottom: 10px;">
+            🔄 REINICIAR DINERO A $1000 (Sin borrar jugadores)
+        </button>
+        <button onclick="resetTodo()" style="background: #ff4444; color: white; width: 100%;">
+            🔥 BORRAR TODO (Cerrar sesiones y borrar nombres)
+        </button>
     </div>
 
     <script>
         const socket = io();
 
-        // Al cambiar de juego, generamos los botones para que el admin haga clic
+        // 1. Manejar el contador de apuestas en tiempo real
+        socket.on('actualizar_contador', (data) => {
+            document.getElementById('contador-apuestas').innerText = data.conteo;
+        });
+
+        // 2. Generar botones para resolver ronda
         socket.on('new_game', (data) => {
             const contenedor = document.getElementById('botones-resolucion');
             contenedor.innerHTML = "";
-            document.getElementById('resultadoGanador').value = ""; // Limpiar selección previa
+            document.getElementById('resultadoGanador').value = "";
 
             data.options.forEach(opt => {
                 const btn = document.createElement('button');
@@ -78,7 +93,6 @@
                 btn.innerText = opt;
                 btn.onclick = () => {
                     document.getElementById('resultadoGanador').value = opt;
-                    // Feedback visual del botón seleccionado
                     document.querySelectorAll('.winner-btn').forEach(b => b.style.border = "2px solid transparent");
                     btn.style.border = "4px solid #00ff00";
                 };
@@ -86,12 +100,12 @@
             });
         });
 
-        // Actualizar lista de jugadores
+        // 3. Actualizar lista de jugadores y dropdown
         socket.on('round_result', (data) => {
             const lista = document.getElementById('lista-admin-jugadores');
             const select = document.getElementById('select-jugadores');
             lista.innerHTML = "";
-            select.innerHTML = '<option value="">Seleccionar...</option>';
+            select.innerHTML = '<option value="">Seleccionar jugador...</option>';
             
             Object.keys(data.players).forEach(name => {
                 const li = document.createElement('li');
@@ -113,19 +127,16 @@
             const res = document.getElementById('resultadoGanador').value;
             if(res) {
                 socket.emit('admin_resolve', { ganador: res });
-                alert("Pagado al ganador: " + res);
+                // Al pagar, también habilitamos la siguiente ronda automáticamente
+                socket.emit('admin_next_round');
+                alert("Pagado y pantallas desbloqueadas para la siguiente ronda.");
             } else {
-                alert("Selecciona un ganador primero.");
+                alert("Selecciona un ganador primero haciendo clic en los botones de arriba.");
             }
         }
 
-        function siguienteRonda() {
-            socket.emit('admin_next_round');
-            alert("Nueva ronda iniciada. Pantallas de invitados desbloqueadas.");
-        }
-
         function eliminarJugador(nombre) {
-            if(confirm(`¿Eliminar a ${nombre}?`)) socket.emit('admin_remove_player', { name: nombre });
+            if(confirm(`¿Deseas expulsar a ${nombre}?`)) socket.emit('admin_remove_player', { name: nombre });
         }
 
         function darDineroEspecifico() {
@@ -138,8 +149,16 @@
             socket.emit('admin_give_random');
         }
 
+        function resetDinero() {
+            if(confirm("¿Seguro? Todos volverán a $1000 sin ser expulsados.")) {
+                socket.emit('admin_reset_money_only');
+            }
+        }
+
         function resetTodo() {
-            if(confirm("¿Borrar todo?")) socket.emit('admin_reset_all');
+            if(confirm("¿BORRAR TODO? Los jugadores deberán escanear el QR de nuevo.")) {
+                socket.emit('admin_reset_all');
+            }
         }
     </script>
 </body>
