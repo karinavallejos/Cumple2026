@@ -32,12 +32,33 @@
     </div>
 
     <div class="control-group">
-        <h3>2. Pagar Apuestas de la Ronda</h3>
-        <p>Escribe el resultado que salió (ej: 4 o ❤️):</p>
-        <input type="text" id="resultadoGanador" placeholder="Resultado..." style="width: 200px;">
-        <button onclick="resolver()" class="btn-resolve">💵 ¡PAGAR APUESTAS AHORA!</button>
-        <p style="font-size: 0.8rem; color: #aaa;"><i>* El sistema pagará el doble a ganadores y restará $50 a quienes no apostaron.</i></p>
-    </div>
+    <h3>2. Resolver Ronda</h3>
+    <div id="botones-resolucion" style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 15px;">
+        </div>
+    <p><i>Selecciona el ganador arriba y presiona pagar.</i></p>
+    <input type="hidden" id="resultadoGanador">
+    <button onclick="resolver()" class="btn-resolve">💵 PAGAR AHORA</button>
+</div>
+
+<script>
+    // Esta función crea los botones para que el admin solo haga click
+    socket.on('new_game', (data) => {
+        const contenedor = document.getElementById('botones-resolucion');
+        contenedor.innerHTML = "";
+        data.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.innerText = opt;
+            btn.style.width = "60px";
+            btn.onclick = () => {
+                document.getElementById('resultadoGanador').value = opt;
+                // Feedback visual para el admin
+                document.querySelectorAll('#botones-resolucion button').forEach(b => b.style.border = "none");
+                btn.style.border = "4px solid lime";
+            };
+            contenedor.appendChild(btn);
+        });
+    });
+</script>
 
     <div class="control-group">
         <h3>👥 Jugadores Conectados</h3>
