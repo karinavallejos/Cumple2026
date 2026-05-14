@@ -6,19 +6,30 @@
     <title>Casino Cumpleaños - Login</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
-    <div class="header-vegas">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/b/b2/Welcome_to_Fabulous_Las_Vegas.svg" alt="Las Vegas" style="width: 100%;">
+<body style="margin: 0; background-color: black; overflow: hidden;">
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 20px; padding: 20px; box-sizing: border-box;">
+        
+        <div class="header-vegas">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/b/b2/Welcome_to_Fabulous_Las_Vegas.svg" alt="Las Vegas" style="width: 250px; max-width: 80vw;">
+        </div>
+
+        <h2 style="color: gold; margin: 0; font-family: sans-serif; text-shadow: 2px 2px 4px #000;">INGRESA TU NOMBRE</h2>
+        
+        <input type="text" id="playerName" placeholder="Tu nombre aquí..." 
+               style="padding: 15px; font-size: 1.2rem; border-radius: 10px; border: 2px solid gold; background: #222; color: white; text-align: center; width: 100%; max-width: 300px;">
+        
+        <button onclick="login()" class="apuesta-btn" 
+                style="width: 200px; border-radius: 10px; height: 55px; cursor: pointer; font-weight: bold; font-size: 1.1rem; border: none; background: #ffcc00; color: black; box-shadow: 0 4px 15px rgba(255, 204, 0, 0.4);">
+            ¡ENTRAR A JUGAR!
+        </button>
+
     </div>
-    <h2>INGRESA TU NOMBRE</h2>
-    <input type="text" id="playerName" placeholder="Tu nombre aquí..." style="padding: 10px; font-size: 1.2rem; border-radius: 10px; border: none;">
-    <br><br>
-    <button onclick="login()" class="apuesta-btn" style="width: 200px; border-radius: 10px;">¡ENTRAR A JUGAR!</button>
 
     <script>
         function login() {
             const name = document.getElementById('playerName').value;
             if (name.trim() !== "") {
+                // Guarda el nombre en el navegador para recordarlo [cite: 302, 303]
                 localStorage.setItem('casino_name', name);
                 window.location.href = "/juego";
             } else {
