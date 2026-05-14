@@ -10,11 +10,12 @@ app.config['SECRET_KEY'] = 'cumple_secreto_2026'
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
 
 players = {} 
+# Dentro de app.py, asegúrate de que current_game empiece así:
 current_game = {
-    "view": "dados", 
-    "options": ["1", "2", "3", "4", "5", "6"],
-    "status": "apostando",
-    "ronda": 1 # Nueva variable de ronda controlada por admin 
+    "view": "ninguna", 
+    "options": [],
+    "status": "esperando", # Estado inicial
+    "ronda": 1
 }
 
 @app.route('/')
@@ -78,10 +79,12 @@ def next_round():
     current_game['status'] = 'apostando'
     emit('new_game', current_game, broadcast=True)
 
+# En la función de cambio de visual, actualizamos el estado
 @socketio.on('admin_change_view')
 def change_view(data):
     current_game['view'] = data['view']
     current_game['options'] = data['options']
+    current_game['status'] = 'apostando' # Cambia a apostando al elegir visual
     emit('new_game', current_game, broadcast=True)
 
 # 1. ELIMINAR A UN JUGADOR ESPECÍFICO 
