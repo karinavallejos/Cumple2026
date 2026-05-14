@@ -108,6 +108,29 @@ def handle_reset_all():
     global players
     players.clear() 
     emit('game_reset_done', broadcast=True)
+# Modifica la función de apuesta para avisar al admin en tiempo real
+@socketio.on('place_bet')
+def handle_bet(data):
+    user = data['name']
+    monto = int(data['monto'])
+    opcion = data['opcion']
+    if user in players and players[user]['puntos'] >= monto:
+        players[user]['puntos'] -= monto
+        players[user]['aposto'] = True
+        players[user]['apuesta_valor'] = monto
+        players[user]['opcion'] = opcion
+        emit('update_puntos', {'puntos': players[user]['puntos']}, broadcast=False)
+        # AVISO AL ADMIN: Enviamos la lista para actualizar el contador 5/10
+        emit('round_result', {'ganador': 'Apostando...', 'players': players}, broadcast=True)
 
+# NUEVA FUNCIÓN: Reiniciar solo el dinero
+@socketio.on('admin_reset_money_only')
+def handle_reset_money():
+    for user in players:
+        players[user]['puntos'] = 1000
+        players[user]['aposto'] = False
+        players[user]['apuesta_valor'] = 0
+    # Avisamos a todos del nuevo saldo
+    emit('round_result', {'ganador': '¡Dinero Reiniciado!', 'players': players}, broadcast=True)
 if __name__ == '__main__':
     socketio.run(app, debug=True)
