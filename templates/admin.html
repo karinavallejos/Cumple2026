@@ -59,7 +59,13 @@
         });
     });
 </script>
-
+<div class="control-group">
+    <h3>3. Control de Rondas</h3>
+    <button onclick="socket.emit('admin_next_round')" style="background: orange; width: 100%;">
+        ¡EMPEZAR SIGUIENTE RONDA!
+    </button>
+    <p><i>Usa esto después de pagar para habilitar las apuestas de nuevo.</i></p>
+</div>
     <div class="control-group">
         <h3>👥 Jugadores Conectados</h3>
         <ul id="lista-admin-jugadores">
