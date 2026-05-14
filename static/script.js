@@ -128,6 +128,15 @@ socket.on('new_game', (game) => {
     montoElegido = 0;
 });
 
+socket.on('round_result', (data) => {
+    // Si el admin reseteó el dinero, el jugador verá sus $1000 de nuevo
+    if (data.players[miNombre]) {
+        currentPuntos = data.players[miNombre].puntos;
+        document.getElementById('display-puntos').innerText = "$" + currentPuntos;
+    }
+    // ... (resto de tu lógica de GANASTE/PERDISTE)
+});
+
 // 3. Resultado de la ronda (GANASTE / PERDISTE) [cite: 66, 149, 411, 433, 436]
 socket.on('round_result', (data) => {
     const ganador = data.ganador;
