@@ -2,36 +2,42 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Ranking Casino</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking - Casino Cumpleaños</title>
     <link rel="stylesheet" href="/static/style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 </head>
-<body>
-    <h1 style="color: gold;">🏆 TOP JUGADORES 🏆</h1>
-    <table id="tablaRanking" style="width: 90%; margin: auto; font-size: 1.5rem; border-collapse: collapse;">
-        <tr style="border-bottom: 2px solid gold;">
-            <th>Jugador</th>
-            <th>Dinero</th>
-        </tr>
-        </table>
-    <br>
-    <button onclick="window.location.href='/juego'" class="apuesta-btn" style="width: auto; padding: 0 20px;">Volver al Juego</button>
+<body style="background: black; color: white;">
+    <div class="header-vegas">
+        <img src="/static/logo-vegas.svg" alt="Las Vegas" style="width: 150px;">
+    </div>
+    
+    <h1 style="color: gold; text-shadow: 2px 2px 4px #000;">🏆 TABLA DE POSICIONES</h1>
 
-    <script>
-        const socket = io();
-        socket.on('round_result', (data) => {
-            const tabla = document.getElementById('tablaRanking');
-            // Limpiar tabla excepto encabezado
-            tabla.innerHTML = '<tr style="border-bottom: 2px solid gold;"><th>Jugador</th><th>Dinero</th></tr>';
-            
-            // Ordenar jugadores por puntos
-            const sorted = Object.entries(data.players).sort((a,b) => b[1].puntos - a[1].puntos);
-            
-            sorted.forEach(([name, info]) => {
-                const row = tabla.insertRow();
-                row.innerHTML = `<td>${name}</td><td style="color:lime">$${info.puntos}</td>`;
-            });
-        });
-    </script>
+    <div style="padding: 10px; max-width: 500px; margin: auto;">
+        <table style="width: 100%; border-collapse: collapse; background: #222; border-radius: 15px; overflow: hidden; border: 2px solid gold;">
+            <thead style="background: gold; color: black;">
+                <tr>
+                    <th style="padding: 15px;">#</th>
+                    <th style="padding: 15px; text-align: left;">JUGADOR</th>
+                    <th style="padding: 15px; text-align: right;">PUNTOS</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for player in ranking %}
+                <tr style="border-bottom: 1px solid #444;">
+                    <td style="padding: 12px; font-weight: bold; color: gold;">{{ loop.index }}</td>
+                    <td style="padding: 12px; text-align: left; font-size: 1.1rem;">{{ player[0] }}</td>
+                    <td style="padding: 12px; text-align: right; color: lime; font-weight: bold;">${{ player[1].puntos }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top: 30px;">
+        <a href="/juego" style="display: inline-block; padding: 12px 25px; background: #ffcc00; color: black; text-decoration: none; border-radius: 10px; font-weight: bold;">
+            VOLVER AL JUEGO
+        </a>
+    </div>
 </body>
 </html>
