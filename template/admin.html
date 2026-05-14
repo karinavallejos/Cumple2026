@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel Admin - Casino</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body { background: #222; color: white; font-family: sans-serif; padding: 20px; }
+        .control-group { border: 1px solid gold; padding: 15px; margin-bottom: 20px; border-radius: 10px; }
+        button { padding: 10px; cursor: pointer; background: gold; border: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>CONTROL DEL CUMPLE</h1>
+
+    <div class="control-group">
+        <h3>1. Cambiar Juego (Visual de ellos)</h3>
+        <button onclick="cambiarVisual('dados', ['1','2','3','4','5','6'])">DADOS (1-6)</button>
+        <button onclick="cambiarVisual('cartas', ['❤️','💎','🍀','♠️'])">CARTAS (Pintas)</button>
+        <button onclick="cambiarVisual('especial', ['ROJO','NEGRO'])">COLORES</button>
+    </div>
+
+    <div class="control-group">
+        <h3>2. Resolver Ronda (Poner número/pinta que salió)</h3>
+        <input type="text" id="resultadoGanador" placeholder="Ej: 4 o ❤️">
+        <button onclick="resolver()" style="background: lime;">¡PAGAR APUESTAS!</button>
+        <p><i>Si no apostaron, se les restarán 50 automáticamente.</i></p>
+    </div>
+
+    <script>
+        const socket = io();
+        function cambiarVisual(tipo, ops) {
+            socket.emit('admin_change_view', { view: tipo, options: ops });
+            alert("Visual cambiada a " + tipo);
+        }
+        function resolver() {
+            const res = document.getElementById('resultadoGanador').value;
+            if(res) {
+                socket.emit('admin_resolve', { ganador: res });
+                alert("Ronda resuelta: ganador " + res);
+            }
+        }
+    </script>
+</body>
+</html>
