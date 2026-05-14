@@ -16,8 +16,7 @@ socket.on('connect', () => {
 });
 
 /**
- * Función visual para el estado de quiebra (BANCA ROTA)
- * Bloquea botones y muestra el mensaje de error
+ * Muestra el mensaje de quiebra definitiva
  */
 function mostrarBancaRota() {
     const msgArea = document.getElementById('mensaje-espera');
@@ -68,10 +67,11 @@ function seleccionarPlata(monto, elemento) {
 }
 
 /**
- * ENVÍO FINAL: Bloquea si no hay dinero suficiente
+ * CONFIRMAR APUESTA: Ahora permite el ALL IN sin bloquear la pantalla
  */
 function confirmarApuesta() {
-    if (currentPuntos <= 0) {
+    // Solo bloqueamos si ya EMPEZÓ la ronda con 0 (quiebra real de ronda anterior)
+    if (currentPuntos <= 0 && opcionElegida === null) {
         mostrarBancaRota();
         return;
     }
@@ -85,6 +85,8 @@ function confirmarApuesta() {
 
     if (confirm(`¿Estás seguro de apostar $${finalMonto} al ${opcionElegida}?`)) {
         socket.emit('place_bet', { name: miNombre, monto: finalMonto, opcion: opcionElegida });
+        
+        // Ocultamos controles y mostramos espera
         document.getElementById('controles-juego').style.display = 'none';
         const msg = document.getElementById('mensaje-espera');
         msg.innerHTML = "⌛ APUESTA ENVIADA... <br> ESPERANDO AL ADMIN";
@@ -94,12 +96,12 @@ function confirmarApuesta() {
 
 // --- ESCUCHADORES (SOCKETS) ---
 
-// 1. Carga inicial: Si el jugador entra con 0 puntos, ve Banca Rota de inmediato
 socket.on('update_data', (data) => {
     currentPuntos = data.puntos;
     document.getElementById('display-puntos').innerText = "$" + currentPuntos;
     document.getElementById('ronda-display').innerText = "RONDA " + data.game.ronda;
     
+    // Si entra y ya tiene 0 puntos sin haber apostado nada
     if (currentPuntos <= 0) {
         mostrarBancaRota();
     } else if (data.game.status === "esperando") {
@@ -114,7 +116,6 @@ socket.on('update_data', (data) => {
     }
 });
 
-// 2. Resultado de la ronda: Muestra premios o multa por inactividad
 socket.on('round_result', (data) => {
     const ganador = data.ganador;
     const msgArea = document.getElementById('mensaje-espera');
@@ -124,7 +125,7 @@ socket.on('round_result', (data) => {
     msgArea.style.display = 'block';
     document.getElementById('controles-juego').style.display = 'none';
 
-    // Mostrar el resultado de la apuesta
+    // Verificamos el resultado de la apuesta activa
     if (opcionElegida !== null) {
         if (String(opcionElegida) === String(ganador)) {
             msgArea.innerHTML = "<h1 style='color: lime;'>¡GANASTE! 🎉</h1>";
@@ -135,40 +136,37 @@ socket.on('round_result', (data) => {
         msgArea.innerHTML = "<h1 style='color: #ffa500;'>PIERDE $50 POR NO APOSTAR 💸</h1>";
     }
 
-    // Actualizar dinero real del servidor
+    // Actualizamos el saldo real (aquí se suma el premio si ganó)
     if (data.players[miNombre]) {
         currentPuntos = data.players[miNombre].puntos;
         document.getElementById('display-puntos').innerText = "$" + currentPuntos;
     }
 
-    // Esperar 4 segundos y decidir qué mostrar después
+    // ESPERAMOS 4 SEGUNDOS: El momento clave para decidir si hay Banca Rota
     setTimeout(() => {
         if (currentPuntos <= 0) {
-            mostrarBancaRota(); // Si se quedó en 0 tras la ronda, mostrar Banca Rota
+            mostrarBancaRota(); // Si tras cobrar premios sigues en 0, ahí recién es Banca Rota
         } else {
             msgArea.innerHTML = "<h2 style='color: gold;'>RONDA TERMINADA</h2><p>Espera a que el host inicie la siguiente... 🍀</p>";
+            opcionElegida = null; // Limpiamos para la siguiente
         }
     }, 4000);
 });
 
-// 3. Sincronización de dinero (Regalos del admin o apuestas confirmadas)
 socket.on('update_puntos', (data) => {
     currentPuntos = data.puntos;
-    document.getElementById('display-puntos').innerText = "$" + currentPuntos;
+    document.getElementById('display-puntos').innerText = "$" + data.puntos;
     
-    // Si el jugador tenía Banca Rota y recibió un regalo del admin, desbloquear pantalla
+    // Si un regalo del admin le devuelve la vida, desbloqueamos la pantalla
     if (currentPuntos > 0) {
         const msgText = document.getElementById('mensaje-espera').innerText;
         if (msgText.includes("BANCA ROTA")) {
             document.getElementById('mensaje-espera').style.display = 'none';
             document.getElementById('controles-juego').style.display = 'block';
         }
-    } else {
-        mostrarBancaRota();
     }
 });
 
-// 4. Cambios de juego (Solo para jugadores con dinero)
 socket.on('new_game', (game) => {
     if (currentPuntos <= 0) {
         mostrarBancaRota();
