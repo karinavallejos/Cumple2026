@@ -114,14 +114,17 @@ def handle_bet(data):
     user = data['name']
     monto = int(data['monto'])
     opcion = data['opcion']
+    
+    # VALIDACIÓN DE APUESTA MÍNIMA
+    if monto < 50:
+        return # Simplemente no procesa la apuesta si es menor a 50
+
     if user in players and players[user]['puntos'] >= monto:
         players[user]['puntos'] -= monto
         players[user]['aposto'] = True
         players[user]['apuesta_valor'] = monto
         players[user]['opcion'] = opcion
         emit('update_puntos', {'puntos': players[user]['puntos']}, broadcast=False)
-        # AVISO AL ADMIN: Enviamos la lista para actualizar el contador 5/10
-        emit('round_result', {'ganador': 'Apostando...', 'players': players}, broadcast=True)
 
 # NUEVA FUNCIÓN: Reiniciar solo el dinero
 @socketio.on('admin_reset_money_only')
