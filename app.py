@@ -66,24 +66,20 @@ def handle_join(data):
     emit('actualizar_contador', {'conteo': obtener_estado_apuestas()}, broadcast=True)
 
 @socketio.on('place_bet')
+@socketio.on('place_bet')
 def handle_bet(data):
     user = data['name']
     monto = int(data['monto'])
     opcion = data['opcion']
     
-    # 1. Validación de apuesta mínima de $50
-    if monto < 50: return 
-
-    # 2. Verificación de fondos (Evita apuestas negativas o mayores al saldo)
+    # YA NO HAY FILTRO DE 50, SOLO VERIFICAMOS FONDOS
     if user in players and players[user]['puntos'] >= monto:
-        players[user]['puntos'] -= monto # Descuento inmediato
+        players[user]['puntos'] -= monto
         players[user]['aposto'] = True
         players[user]['apuesta_valor'] = monto
         players[user]['opcion'] = opcion
         
-        # Notificar saldo actualizado al jugador
         emit('update_puntos', {'puntos': players[user]['puntos']}, broadcast=False)
-        # Actualizar contador de apuestas para el Admin
         emit('actualizar_contador', {'conteo': obtener_estado_apuestas()}, broadcast=True)
 
 # --- EVENTOS DE SOCKET (ADMINISTRADOR) ---
