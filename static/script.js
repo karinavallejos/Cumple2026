@@ -70,12 +70,6 @@ function seleccionarPlata(monto, elemento) {
     }
 }
 
-/**
- * ENVÍO DE APUESTA: Bloquea controles y muestra espera
- */
-/**
- * ENVÍO DE APUESTA: Simplificado sin input manual
- */
 function confirmarApuesta() {
     // 1. Verificación de quiebra
     if (currentPuntos <= 0 && opcionElegida === null) {
@@ -83,7 +77,7 @@ function confirmarApuesta() {
         return;
     }
 
-    // El montoElegido viene directamente de los botones
+    // Usamos el monto que se guardó al hacer clic en los círculos
     let finalMonto = montoElegido;
 
     // 2. Validación: ¿Eligió un monto?
@@ -94,7 +88,7 @@ function confirmarApuesta() {
 
     // 3. Validación: ¿Tiene dinero suficiente?
     if (finalMonto > currentPuntos) {
-        alert("¡No tienes suficiente dinero para esta apuesta!"); 
+        alert("¡No tienes suficiente dinero!"); 
         return; 
     }
 
@@ -109,10 +103,7 @@ function confirmarApuesta() {
         
         document.getElementById('controles-juego').style.display = 'none';
         const msg = document.getElementById('mensaje-espera');
-        msg.innerHTML = `
-            <h2 style="color: gold;">⌛ APUESTA ENVIADA</h2>
-            <p>Esperando resultados...</p>
-        `;
+        msg.innerHTML = "⌛ APUESTA ENVIADA... <br> ESPERANDO AL ADMIN";
         msg.style.display = 'block';
     }
 }
