@@ -73,28 +73,45 @@ function seleccionarPlata(monto, elemento) {
 /**
  * ENVÍO DE APUESTA: Bloquea controles y muestra espera
  */
+/**
+ * ENVÍO DE APUESTA: Simplificado sin input manual
+ */
 function confirmarApuesta() {
-    // Si ya está en 0 y no ha apostado, es quiebra
+    // 1. Verificación de quiebra
     if (currentPuntos <= 0 && opcionElegida === null) {
         mostrarBancaRota();
         return;
     }
 
+    // El montoElegido viene directamente de los botones
     let finalMonto = montoElegido;
-    const manual = document.getElementById('monto-manual').value;
-    if (manual > 0) finalMonto = parseInt(manual);
 
-    if (finalMonto < 50) { alert("La apuesta mínima es de $50."); return; }
-    if (!opcionElegida) { alert("Elige una opción primero."); return; }
+    // 2. Validación: ¿Eligió un monto?
+    if (finalMonto <= 0) { 
+        alert("Primero selecciona un monto de apuesta."); 
+        return; 
+    }
 
-    if (confirm(`¿Apostar $${finalMonto} al ${opcionElegida}?`)) {
+    // 3. Validación: ¿Tiene dinero suficiente?
+    if (finalMonto > currentPuntos) {
+        alert("¡No tienes suficiente dinero para esta apuesta!"); 
+        return; 
+    }
+
+    // 4. Validación: ¿Eligió una opción?
+    if (!opcionElegida) { 
+        alert("Elige un número o pinta primero."); 
+        return; 
+    }
+
+    if (confirm(`¿Confirmar apuesta de $${finalMonto} al ${opcionElegida}?`)) {
         socket.emit('place_bet', { name: miNombre, monto: finalMonto, opcion: opcionElegida });
         
         document.getElementById('controles-juego').style.display = 'none';
         const msg = document.getElementById('mensaje-espera');
         msg.innerHTML = `
             <h2 style="color: gold;">⌛ APUESTA ENVIADA</h2>
-            <p>Espera a que el host entregue los resultados...</p>
+            <p>Esperando resultados...</p>
         `;
         msg.style.display = 'block';
     }
