@@ -9,23 +9,11 @@ body {
     overflow-x: hidden;
 }
 
-/* 1. Logo pegado arriba y dinero inmediatamente abajo */
-.header-vegas { 
-    margin-top: 0; 
-    padding: 5px 0; /* Espacio mínimo arriba */
-}
+/* 1. Logo y Dinero */
+.header-vegas { margin-top: 0; padding: 5px 0; }
+.header-vegas img { width: 180px; max-width: 60vw; }
 
-.header-vegas img { 
-    width: 180px; 
-    max-width: 60vw; 
-}
-
-#ronda-display { 
-    color: gold; 
-    margin: 2px 0; 
-    font-size: 1.1rem; 
-    text-shadow: 1px 1px 2px black;
-}
+#ronda-display { color: gold; margin: 2px 0; font-size: 1.1rem; text-shadow: 1px 1px 2px black; }
 
 .balance-card { 
     background: linear-gradient(to bottom, #800000, #4d0000);
@@ -36,12 +24,11 @@ body {
     font-size: 2.2rem; 
     font-weight: bold;
     box-shadow: 0 0 15px #ffcc00; 
-    margin-top: -5px; /* Pegado al logo */
+    margin-top: -5px; 
     margin-bottom: 15px;
 }
 
-/* 2. Feedback visual de selección (Borde Amarillo Neón) */
-/* Se aplica tanto a los números/pintas como a los círculos de dinero */
+/* 2. Feedback de selección */
 .opcion-btn.selected, .apuesta-btn.selected-money {
     border: 5px solid #ffcc00 !important;
     box-shadow: 0 0 20px #ffcc00;
@@ -49,7 +36,7 @@ body {
     outline: none;
 }
 
-/* 3. Cuadrícula de opciones (Dados/Cartas) */
+/* 3. Grilla de opciones de juego */
 .grid-opciones { 
     display: grid; 
     grid-template-columns: repeat(3, 1fr); 
@@ -70,7 +57,7 @@ body {
     transition: 0.2s;
 }
 
-/* 4. Contenedor de apuestas y Monto Manual */
+/* 4. Grilla de apuestas ajustada (para los 6 botones) */
 .apuesta-container { 
     display: flex; 
     justify-content: center; 
@@ -92,23 +79,10 @@ body {
     align-items: center; 
     justify-content: center;
     font-size: 0.9rem;
+    margin: 5px; /* Margen para asegurar separación */
 }
 
-/* Estilo para el círculo de entrada manual */
-#monto-manual {
-    width: 75px; 
-    height: 75px; 
-    border-radius: 50%; 
-    border: 3px solid gold; 
-    text-align: center; 
-    background: #222; 
-    color: white;
-    font-weight: bold;
-    font-size: 0.9rem;
-    box-sizing: border-box;
-}
-
-/* 5. Botón de confirmar centrado */
+/* 5. Botón de confirmar */
 .confirmar-container {
     display: flex;
     justify-content: center;
@@ -125,33 +99,12 @@ body {
     transition: 0.3s;
 }
 
-.btn-verde:hover {
-    transform: scale(1.05);
-    background: #33ff33;
-}
+.btn-verde:hover { transform: scale(1.05); background: #33ff33; }
 
-/* Mensaje de espera y resultados */
-#mensaje-espera {
-    font-weight: bold;
-    text-shadow: 2px 2px 5px black;
-    margin: 20px 0;
-}
+/* Mensajes y Tablas */
+#mensaje-espera { font-weight: bold; text-shadow: 2px 2px 5px black; margin: 20px 0; }
 
-/* Estilos para la tabla de ranking */
-table {
-    box-shadow: 0 0 20px rgba(255, 204, 0, 0.2);
-    margin-top: 20px;
-}
-
-th {
-    font-size: 1.1rem;
-    text-transform: uppercase;
-}
-
-tr:nth-child(even) {
-    background-color: #1a1a1a; /* Color alternado para leer mejor */
-}
-
-tr:hover {
-    background-color: #333; /* Resalte al pasar el dedo/mouse */
-}
+table { box-shadow: 0 0 20px rgba(255, 204, 0, 0.2); margin-top: 20px; width: 100%; border-collapse: collapse; }
+th { font-size: 1.1rem; text-transform: uppercase; padding: 10px; }
+tr:nth-child(even) { background-color: #1a1a1a; }
+tr:hover { background-color: #333; }
