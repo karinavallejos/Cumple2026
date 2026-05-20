@@ -3,90 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin - Casino Cumpleaños</title>
+    <title>Panel Admin - Casino</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
-        body { background: #1a1a1a; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+        body { background: #1a1a1a; color: white; font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
         h1 { color: gold; text-align: center; border-bottom: 2px solid gold; padding-bottom: 10px; }
         .control-group { border: 1px solid gold; padding: 15px; margin-bottom: 20px; border-radius: 10px; background: #262626; }
         h3 { margin-top: 0; color: #ffcc00; }
-        button { padding: 10px 15px; cursor: pointer; background: gold; border: none; font-weight: bold; border-radius: 5px; transition: 0.3s; margin: 5px 0; }
-        button:hover { background: #ffcc00; transform: scale(1.05); }
-        input, select { padding: 10px; border-radius: 5px; border: 1px solid gold; background: #333; color: white; margin-bottom: 10px; }
-        ul { list-style: none; padding: 0; }
-        li { background: #333; padding: 10px; margin-bottom: 5px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid gold; }
-        .btn-delete { background: #ff4444; color: white; padding: 5px 10px; font-size: 0.8rem; }
-        .btn-resolve { background: #00ff00; color: black; width: 100%; font-size: 1.1rem; margin-top: 10px; }
-        .winner-btn { width: 60px; height: 60px; font-size: 1.5rem; margin: 5px; border: 2px solid transparent; }
-        #contador-apuestas { font-size: 3rem; font-weight: bold; color: #00ffff; text-align: center; margin: 10px 0; }
+        button { padding: 12px; cursor: pointer; background: gold; border: none; font-weight: bold; border-radius: 5px; margin: 5px; }
+        .btn-resolve { background: #00ff00; width: 100%; margin-top: 10px; }
+        .btn-next { background: #0088ff; color: white; width: 100%; margin-top: 10px; }
+        input, select { padding: 10px; border-radius: 5px; background: #333; color: white; border: 1px solid gold; }
+        #contador-apuestas { font-size: 3rem; font-weight: bold; color: #00ffff; text-align: center; }
+        .winner-btn { width: 60px; height: 60px; font-size: 1.5rem; border: 2px solid transparent; }
     </style>
 </head>
 <body>
-    <h1>🎰 PANEL DE CONTROL DE DINÁMICAS</h1>
+    <h1>🎰 PANEL DE CONTROL</h1>
 
-    <!-- 1. ESTADO DE LAS APUESTAS (NUEVO) -->
-    <div class="control-group" style="border-color: cyan; background: #0e2a2a;">
-        <h3>📊 Apuestas Confirmadas</h3>
-        <div id="contador-apuestas">0/0</div>
-        <p style="text-align: center; margin: 0; color: cyan;">Esperando a que los invitados confirmen...</p>
-    </div>
-
-    <!-- 2. CAMBIO DE JUEGO -->
     <div class="control-group">
-        <h3>1. Cambiar Juego (Visual de Invitados)</h3>
-        <button onclick="cambiarVisual('dados', ['1','2','3','4','5','6'])">🎲 ACTIVAR DADOS (1-6)</button>
-        <button onclick="cambiarVisual('cartas', ['❤️','💎','🍀','♠️'])">🃏 ACTIVAR CARTAS (Pintas)</button>
-        <button onclick="cambiarVisual('especial', ['ROJO','NEGRO'])">🔴 ACTIVAR COLORES</button>
+        <h3>📊 Estado: Apuestas Confirmadas</h3>
+        <div id="contador-apuestas">0/0</div>
     </div>
 
-    <!-- 3. RESOLVER RONDA -->
+    <div class="control-group">
+        <h3>1. Cambiar Visual</h3>
+        <button onclick="cambiarVisual('dados', ['1','2','3','4','5','6'])">🎲 DADOS</button>
+        <button onclick="cambiarVisual('cartas', ['❤️','💎','🍀','♠️'])">🃏 CARTAS</button>
+        <button onclick="cambiarVisual('especial', ['ROJO','NEGRO'])">🔴 COLORES</button>
+    </div>
+
     <div class="control-group">
         <h3>2. Resolver Ronda</h3>
-        <p>Selecciona el ganador que salió:</p>
-        <div id="botones-resolucion" style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 15px;">
-            <!-- Se llena solo al elegir un juego -->
-        </div>
-        <input type="text" id="resultadoGanador" placeholder="Ganador seleccionado..." readonly style="width: 100%; text-align: center; background: #444;">
-        <button onclick="resolver()" class="btn-resolve">💵 PAGAR Y DESBLOQUEAR PANTALLAS</button>
+        <div id="botones-resolucion" style="display:flex; justify-content:center; gap:10px;"></div>
+        <input type="text" id="resultadoGanador" readonly style="width: 90%; text-align: center; margin-top: 10px;">
+        <button onclick="resolver()" class="btn-resolve">💵 PAGAR Y FINALIZAR RONDA</button>
+        <button onclick="siguienteRonda()" class="btn-next">▶ INICIAR SIGUIENTE RONDA</button>
     </div>
 
-    <!-- 4. JUGADORES Y REGALOS -->
     <div class="control-group">
-        <h3>👥 Jugadores Conectados</h3>
+        <h3>👥 Jugadores</h3>
         <ul id="lista-admin-jugadores"></ul>
-        <hr style="border: 0.5px solid #444; margin: 15px 0;">
-        <h3>🎁 Gestión de Dinero</h3>
         <select id="select-jugadores"></select>
-        <input type="number" id="monto-regalo" placeholder="Monto $" style="width: 80px;">
-        <button onclick="darDineroEspecifico()" style="background: cyan; color: black;">DAR REGALO</button>
-        <button onclick="darDineroAzar()" style="background: #fff; color: black;">BONO AL AZAR A TODOS</button>
+        <input type="number" id="monto-regalo" placeholder="$">
+        <button onclick="darDineroEspecifico()">DAR BONO</button>
     </div>
 
-    <!-- 5. ZONA DE REINICIOS -->
-    <div class="control-group" style="border-color: #ff4444;">
-        <h3 style="color: #ff4444;">⚠️ Gestión de Reinicios</h3>
-        <button onclick="resetDinero()" style="background: #ffcc00; color: black; width: 100%; margin-bottom: 10px;">
-            🔄 REINICIAR DINERO A $1000 (Sin borrar jugadores)
-        </button>
-        <button onclick="resetTodo()" style="background: #ff4444; color: white; width: 100%;">
-            🔥 BORRAR TODO (Cerrar sesiones y borrar nombres)
-        </button>
-    </div>
-    
     <script>
         const socket = io();
 
-        // 1. Manejar el contador de apuestas en tiempo real
         socket.on('actualizar_contador', (data) => {
             document.getElementById('contador-apuestas').innerText = data.conteo;
         });
 
-        // 2. Generar botones para resolver ronda
         socket.on('new_game', (data) => {
             const contenedor = document.getElementById('botones-resolucion');
             contenedor.innerHTML = "";
             document.getElementById('resultadoGanador').value = "";
-
             data.options.forEach(opt => {
                 const btn = document.createElement('button');
                 btn.className = "winner-btn";
@@ -99,75 +72,44 @@
                 contenedor.appendChild(btn);
             });
         });
-        // Dentro del <script> de admin.html
-        socket.on('actualizar_contador', (data) => {
-            const el = document.getElementById('contador-apuestas');
-            if (el) {
-                el.innerText = data.conteo;
-                // Efecto visual opcional: que brille cuando cambie
-                el.style.color = "#00ff00"; 
-                setTimeout(() => { el.style.color = "#00ffff"; }, 500);
-            }
-        });
-        // 3. Actualizar lista de jugadores y dropdown
+
         socket.on('round_result', (data) => {
+            actualizarLista(data.players);
+        });
+
+        socket.on('update_data', (data) => {
+            actualizarLista(data.players);
+        });
+
+        function actualizarLista(players) {
             const lista = document.getElementById('lista-admin-jugadores');
             const select = document.getElementById('select-jugadores');
             lista.innerHTML = "";
-            select.innerHTML = '<option value="">Seleccionar jugador...</option>';
-            
-            Object.keys(data.players).forEach(name => {
+            select.innerHTML = '<option value="">Seleccionar...</option>';
+            Object.keys(players).forEach(name => {
                 const li = document.createElement('li');
-                li.innerHTML = `<span>👤 <b>${name}</b>: $${data.players[name].puntos}</span>
-                                <button onclick="eliminarJugador('${name}')" class="btn-delete">X</button>`;
+                li.innerText = `${name}: $${players[name].puntos}`;
                 lista.appendChild(li);
-
                 const opt = document.createElement('option');
                 opt.value = name; opt.innerText = name;
                 select.appendChild(opt);
             });
-        });
-
-        function cambiarVisual(tipo, ops) {
-            socket.emit('admin_change_view', { view: tipo, options: ops });
         }
 
+        function cambiarVisual(t, o) { socket.emit('admin_change_view', { view: t, options: o }); }
+        
         function resolver() {
             const res = document.getElementById('resultadoGanador').value;
-            if(res) {
-                socket.emit('admin_resolve', { ganador: res });
-                // Al pagar, también habilitamos la siguiente ronda automáticamente
-                socket.emit('admin_next_round');
-                alert("Pagado y pantallas desbloqueadas para la siguiente ronda.");
-            } else {
-                alert("Selecciona un ganador primero haciendo clic en los botones de arriba.");
-            }
+            if(res) socket.emit('admin_resolve', { ganador: res });
+            else alert("Selecciona un ganador");
         }
 
-        function eliminarJugador(nombre) {
-            if(confirm(`¿Deseas expulsar a ${nombre}?`)) socket.emit('admin_remove_player', { name: nombre });
-        }
+        function siguienteRonda() { socket.emit('admin_next_round'); }
 
         function darDineroEspecifico() {
-            const nombre = document.getElementById('select-jugadores').value;
-            const monto = document.getElementById('monto-regalo').value;
-            if(nombre && monto) socket.emit('admin_give_money_specific', { name: nombre, monto: monto });
-        }
-
-        function darDineroAzar() {
-            socket.emit('admin_give_random');
-        }
-
-        function resetDinero() {
-            if(confirm("¿Seguro? Todos volverán a $1000 sin ser expulsados.")) {
-                socket.emit('admin_reset_money_only');
-            }
-        }
-
-        function resetTodo() {
-            if(confirm("¿BORRAR TODO? Los jugadores deberán escanear el QR de nuevo.")) {
-                socket.emit('admin_reset_all');
-            }
+            const n = document.getElementById('select-jugadores').value;
+            const m = document.getElementById('monto-regalo').value;
+            if(n && m) socket.emit('admin_give_money_specific', { name: n, monto: m });
         }
     </script>
 </body>
