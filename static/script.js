@@ -92,15 +92,27 @@ socket.on('update_data', (data) => {
 socket.on('round_result', (data) => {
     listaGlobalJugadores = data.players;
     const msgArea = document.getElementById('mensaje-espera');
+    
     if (data.ganador === "Esperando..." || data.ganador === "Actualizando...") return;
 
+    // 1. Ocultar botones y mostrar mensaje
+    document.getElementById('controles-juego').style.display = 'none'; 
     msgArea.style.display = 'block';
-    document.getElementById('controles-juego').style.display = 'none';
 
+    // 2. Definir texto
     msgArea.innerHTML = (opcionElegida !== null && String(opcionElegida) === String(data.ganador)) 
         ? "<h1 style='color: lime;'>¡GANASTE! 🎉</h1>" 
         : (opcionElegida !== null ? "<h1 style='color: red;'>MÁS SUERTE... 💀</h1>" : "<h1 style='color: #ffa500;'>PIERDE $50 POR NO APOSTAR 💸</h1>");
 
+    // 3. Añadir el mensaje de espera permanente debajo del resultado
+    msgArea.innerHTML += `
+        <div style="margin-top: 15px; border-top: 1px solid #444; padding-top: 10px;">
+            <h2 style="color: gold; font-size: 1.2rem;">RONDA TERMINADA</h2>
+            <p>Espera a que el host inicie la siguiente... 🍀</p>
+        </div>
+    `;
+
+    // 4. Actualizar saldo
     if (data.players[miNombre]) {
         currentPuntos = data.players[miNombre].puntos;
         document.getElementById('display-puntos').innerText = "$" + currentPuntos;
