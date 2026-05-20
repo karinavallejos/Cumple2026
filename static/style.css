@@ -158,13 +158,11 @@ tr:hover {
 
 /* Estilo para el mensaje de espera / resultados / banca rota */
 #mensaje-espera {
-    background: rgba(0, 0, 0, 0.85); /* Fondo oscuro semitransparente */
-    border: 2px solid gold;          /* Borde dorado de lujo */
-    border-radius: 15px;             /* Esquinas redondeadas */
-    padding: 20px;
-    margin: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     text-align: center;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); /* Brillo dorado */
-    width: 80%;
-    max-width: 400px;
+    height: 100vh; /* Ocupa toda la pantalla para centrar verticalmente */
+    width: 100%;
 }
