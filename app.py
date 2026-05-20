@@ -175,5 +175,13 @@ def resolve(data):
 @socketio.on('admin_get_players')
 def get_players():
     emit('admin_update', {'players': players}, broadcast=False)
+@socketio.on('admin_refund_bets')
+def refund_bets():
+    for name, info in players.items():
+        if info['aposto']:
+            players[name]['puntos'] += info['apuesta_valor']
+            players[name]['aposto'] = False
+            players[name]['apuesta_valor'] = 0
+    emit('admin_update', {'players': players}, broadcast=True)
 if __name__ == '__main__':
     socketio.run(app, debug=True)
