@@ -136,60 +136,70 @@ socket.on('update_data', (data) => {
     }
 });
 
-// 2. Resultados de la Ronda
+// 2. Ajuste en el resultado de ronda
 socket.on('round_result', (data) => {
     const ganador = data.ganador;
     const msgArea = document.getElementById('mensaje-espera');
-    listaGlobalJugadores = data.players; // Actualizar ranking
-
+    
+    // Si el ganador es un mensaje de sistema, no mostramos nada
     if (ganador === "Esperando..." || ganador === "Actualizando..." || ganador === "REINICIO DE DINERO") return;
 
     msgArea.style.display = 'block';
     document.getElementById('controles-juego').style.display = 'none';
 
+    // 1. Mostrar Ganaste/Perdiste/Penalización
     if (opcionElegida !== null) {
         if (String(opcionElegida) === String(ganador)) {
-            msgArea.innerHTML = "<h1 style='color: lime; font-size: 3rem;'>¡GANASTE! 🎉</h1>";
+            msgArea.innerHTML = "<h1 style='color: lime;'>¡GANASTE! 🎉</h1>";
         } else {
-            msgArea.innerHTML = "<h1 style='color: red; font-size: 2.5rem;'>MÁS SUERTE PARA LA PRÓXIMA 💀</h1>";
+            msgArea.innerHTML = "<h1 style='color: red;'>MÁS SUERTE PARA LA PRÓXIMA 💀</h1>";
         }
     } else {
         msgArea.innerHTML = "<h1 style='color: #ffa500;'>PIERDE $50 POR NO APOSTAR 💸</h1>";
     }
 
+    // 2. Actualizar saldo
     if (data.players[miNombre]) {
         currentPuntos = data.players[miNombre].puntos;
         document.getElementById('display-puntos').innerText = "$" + currentPuntos;
     }
 
-    // Tras 4 segundos, verificar si quedó en quiebra o vuelve a esperar
+    // 3. CAMBIO CLAVE: Después de 4 segundos, mostrar mensaje de espera y NO mostrar los botones
     setTimeout(() => {
-        if (currentPuntos <= 0) {
-            mostrarBancaRota();
-        } else {
+        // Solo mostramos espera si NO está en banca rota
+        if (currentPuntos > 0) {
             msgArea.innerHTML = `
                 <h2 style="color: gold;">RONDA TERMINADA</h2>
                 <p>Espera a que el host inicie la siguiente... 🍀</p>
             `;
-            opcionElegida = null;
-            montoElegido = 0;
+            // IMPORTANTE: Mantenemos 'controles-juego' en display: none
+            document.getElementById('controles-juego').style.display = 'none';
+        } else {
+            mostrarBancaRota();
         }
     }, 4000);
 });
 
-// 3. Sincronización de puntos (Regalos o Apuestas)
-socket.on('update_puntos', (data) => {
-    currentPuntos = data.puntos;
-    document.getElementById('display-puntos').innerText = "$" + currentPuntos;
-    
-    // Si recibe dinero y estaba en Banca Rota, lo rescatamos
-    if (currentPuntos > 0) {
-        const msgText = document.getElementById('mensaje-espera').innerText;
-        if (msgText.includes("BANCA ROTA")) {
-            document.getElementById('mensaje-espera').style.display = 'none';
-            document.getElementById('controles-juego').style.display = 'block';
-        }
+// 3. Cuando el Admin inicia la ronda, ahí recién aparecen los botones
+socket.on('new_game', (game) => {
+    // Si está en Banca Rota, bloqueamos
+    if (currentPuntos <= 0) {
+        mostrarBancaRota();
+        return;
     }
+    
+    // Ocultar mensaje de espera y MOSTRAR controles
+    document.getElementById('mensaje-espera').style.display = 'none';
+    document.getElementById('controles-juego').style.display = 'block';
+    
+    // Actualizar visual
+    renderizarBotones(game.options);
+    document.getElementById('ronda-display').innerText = "RONDA " + game.ronda;
+    
+    // Reset visual
+    document.querySelectorAll('.selected, .selected-money').forEach(el => el.classList.remove('selected', 'selected-money'));
+    opcionElegida = null;
+    montoElegido = 0;
 });
 
 // 4. Nueva Ronda / Cambio de Visual
