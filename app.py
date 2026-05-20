@@ -86,10 +86,10 @@ def handle_bet(data):
 
 @socketio.on('admin_change_view')
 def change_view(data):
-    """Cambia la visual de todos los invitados (Dados, Cartas, etc.)"""
     current_game['view'] = data['view']
     current_game['options'] = data['options']
-    current_game['status'] = 'apostando' # Habilita la ronda
+    current_game['status'] = 'apostando' 
+    # Esto dispara la señal para que a todos les aparezcan los botones al mismo tiempo
     emit('new_game', current_game, broadcast=True)
 
 @socketio.on('admin_resolve')
