@@ -105,7 +105,28 @@
         }
 
         function siguienteRonda() { socket.emit('admin_next_round'); }
+        <script>
+    const socket = io();
+    
+    // Al cargar, pedimos la lista
+    socket.emit('admin_get_players');
 
+    // Escucha cambios en tiempo real (alguien se une, alguien apuesta, o ronda resuelta)
+    socket.on('admin_update', (data) => {
+        const lista = document.getElementById('lista-admin-jugadores');
+        lista.innerHTML = "";
+        Object.keys(data.players).forEach(name => {
+            const p = data.players[name];
+            lista.innerHTML += `<li>${name}: $${p.puntos} ${p.aposto ? '✅' : '⏳'}</li>`;
+        });
+    });
+
+    function iniciarRonda() {
+        const view = document.getElementById('select-visual').value;
+        const ops = document.getElementById('input-ops').value.split(',');
+        socket.emit('admin_start_round', { view: view, options: ops });
+    }
+</script>
         function darDineroEspecifico() {
             const n = document.getElementById('select-jugadores').value;
             const m = document.getElementById('monto-regalo').value;
