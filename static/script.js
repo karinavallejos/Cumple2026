@@ -75,7 +75,8 @@ function confirmarApuesta() {
 
 // --- ESCUCHADORES ---
 
-// 1. Carga inicial (Actualizado)
+// --- ESCUCHADORES (SOLO ESTOS) ---
+
 socket.on('update_data', (data) => {
     currentPuntos = data.puntos;
     listaGlobalJugadores = data.players || {}; 
@@ -87,38 +88,33 @@ socket.on('update_data', (data) => {
     } else if (data.game.status === "esperando") {
         document.getElementById('controles-juego').style.display = 'none';
         const msgArea = document.getElementById('mensaje-espera');
-        msgArea.style.display = 'flex'; // Usamos flex para centrar
+        msgArea.style.display = 'flex';
         msgArea.innerHTML = "<h2>¡BIENVENIDO! 🎰</h2><p>Espera a que el host inicie las apuestas...</p>";
-    } else {
-        // Si el juego está activo, ocultamos el mensaje y mostramos controles
-        document.getElementById('mensaje-espera').style.display = 'none';
-        document.getElementById('controles-juego').style.display = 'block';
     }
 });
 
-// 2. Resultado de ronda (Actualizado)
 socket.on('round_result', (data) => {
+    // FILTRO IMPORTANTE: Si es reinicio de dinero, no mostramos el mensaje de pérdida
+    if (data.ganador === "REINICIO DE DINERO" || data.ganador === "Actualizando...") {
+        document.getElementById('mensaje-espera').style.display = 'none';
+        document.getElementById('controles-juego').style.display = 'block';
+        return;
+    }
+
     listaGlobalJugadores = data.players;
     const msgArea = document.getElementById('mensaje-espera');
     
-    if (data.ganador === "Esperando..." || data.ganador === "Actualizando...") return;
-
-    // 1. OCULTAMOS CONTROLES Y FORZAMOS VISIBILIDAD DEL MENSAJE
     document.getElementById('controles-juego').style.display = 'none'; 
-    
-    // Forzamos el estilo aquí mismo para evitar problemas con el CSS
     msgArea.style.display = 'flex'; 
     msgArea.style.flexDirection = 'column';
     msgArea.style.justifyContent = 'center';
     msgArea.style.alignItems = 'center';
-    msgArea.style.height = '60vh'; // Ajustado para centrar verticalmente
+    msgArea.style.height = '60vh';
 
-    // 2. Definir resultado
     let resultadoHTML = (opcionElegida !== null && String(opcionElegida) === String(data.ganador)) 
         ? "<h1 style='color: lime; font-size: 2.5rem;'>¡GANASTE! 🎉</h1>" 
         : (opcionElegida !== null ? "<h1 style='color: red; font-size: 2.5rem;'>MÁS SUERTE... 💀</h1>" : "<h1 style='color: #ffa500; font-size: 2rem;'>PIERDE $50 POR NO APOSTAR 💸</h1>");
 
-    // 3. Escribir el mensaje
     msgArea.innerHTML = `
         <div style="text-align: center;">
             ${resultadoHTML}
@@ -129,24 +125,13 @@ socket.on('round_result', (data) => {
         </div>
     `;
 
-    // 4. Actualizar saldo
     if (data.players[miNombre]) {
         currentPuntos = data.players[miNombre].puntos;
         document.getElementById('display-puntos').innerText = "$" + currentPuntos;
     }
 });
 
-    // 4. Actualizar saldo
-    if (data.players[miNombre]) {
-        currentPuntos = data.players[miNombre].puntos;
-        document.getElementById('display-puntos').innerText = "$" + currentPuntos;
-    }
-});
-
-// ESTE ES EL ÚNICO NEW_GAME QUE DEBE EXISTIR
 socket.on('new_game', (game) => {
-    if (currentPuntos <= 0) { mostrarBancaRota(); return; }
-    
     document.getElementById('ronda-display').innerText = "RONDA " + game.ronda;
     document.getElementById('controles-juego').style.display = 'block';
     document.getElementById('mensaje-espera').style.display = 'none';
