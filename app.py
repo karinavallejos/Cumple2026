@@ -110,7 +110,7 @@ def resolve(data):
         # El dinero nunca puede ser menor a 0 (Evita bugs visuales)
         if players[user]['puntos'] < 0: players[user]['puntos'] = 0
             
-    emit('round_result', {'ganador': ganador, 'players': players}, broadcast=True)
+    #emit('round_result', {'ganador': ganador, 'players': players}, broadcast=True)
 
 @socketio.on('admin_next_round')
 def next_round():
@@ -133,7 +133,7 @@ def handle_give_money(data):
     if name in players:
         players[name]['puntos'] += monto
         emit('update_puntos', {'puntos': players[name]['puntos']}, broadcast=True)
-        emit('round_result', {'ganador': f'¡Bono para {name}!', 'players': players}, broadcast=True)
+        #emit('round_result', {'ganador': f'¡Bono para {name}!', 'players': players}, broadcast=True)
 
 @socketio.on('admin_give_random')
 def handle_random_money():
@@ -141,7 +141,7 @@ def handle_random_money():
     for user in players:
         regalo = random.randint(50, 500)
         players[user]['puntos'] += regalo
-    emit('round_result', {'ganador': '¡REPARTICIÓN SORPRESA!', 'players': players}, broadcast=True)
+    #emit('round_result', {'ganador': '¡REPARTICIÓN SORPRESA!', 'players': players}, broadcast=True)
 
 @socketio.on('admin_reset_money_only')
 def handle_reset_money():
@@ -149,7 +149,7 @@ def handle_reset_money():
     for user in players:
         players[user]['puntos'] = 1000
         players[user]['aposto'] = False
-    emit('round_result', {'ganador': '¡Dinero Reiniciado!', 'players': players}, broadcast=True)
+    #emit('round_result', {'ganador': '¡Dinero Reiniciado!', 'players': players}, broadcast=True)
     emit('actualizar_contador', {'conteo': obtener_estado_apuestas()}, broadcast=True)
 
 @socketio.on('admin_remove_player')
@@ -159,7 +159,7 @@ def handle_remove_player(data):
         del players[name]
         emit('player_kicked', {'target': name}, broadcast=True)
         emit('actualizar_contador', {'conteo': obtener_estado_apuestas()}, broadcast=True)
-        emit('round_result', {'ganador': 'Actualizando...', 'players': players}, broadcast=True)
+        #emit('round_result', {'ganador': 'Actualizando...', 'players': players}, broadcast=True)
 
 @socketio.on('admin_reset_all')
 def handle_reset_all():
