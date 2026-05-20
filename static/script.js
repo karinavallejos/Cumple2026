@@ -19,7 +19,11 @@ function mostrarBancaRota() {
     const controles = document.getElementById('controles-juego');
     if (controles) controles.style.display = 'none';
     if (msgArea) {
-        msgArea.style.display = 'block';
+        msgArea.style.display = 'flex';
+        msgArea.style.flexDirection = 'column';
+        msgArea.style.justifyContent = 'center';
+        msgArea.style.alignItems = 'center';
+        msgArea.style.height = '60vh';
         msgArea.innerHTML = `
             <h1 style="color: #ff4444; font-size: 3rem; text-shadow: 0 0 15px red;">¡BANCA ROTA! 💀</h1>
             <p style="color: white; font-size: 1.2rem;">Has perdido todo tu dinero. <br>Espera a un bono del host.</p>
@@ -68,14 +72,12 @@ function confirmarApuesta() {
         socket.emit('place_bet', { name: miNombre, monto: finalMonto, opcion: opcionElegida });
         document.getElementById('controles-juego').style.display = 'none';
         const msg = document.getElementById('mensaje-espera');
+        msg.style.display = 'flex';
         msg.innerHTML = "⌛ APUESTA ENVIADA... <br> ESPERANDO AL ADMIN";
-        msg.style.display = 'block';
     }
 }
 
-// --- ESCUCHADORES ---
-
-// --- ESCUCHADORES (SOLO ESTOS) ---
+// --- ESCUCHADORES DE SOCKETS ---
 
 socket.on('update_data', (data) => {
     currentPuntos = data.puntos;
@@ -94,10 +96,12 @@ socket.on('update_data', (data) => {
 });
 
 socket.on('round_result', (data) => {
-    // FILTRO IMPORTANTE: Si es reinicio de dinero, no mostramos el mensaje de pérdida
-    if (data.ganador === "REINICIO DE DINERO" || data.ganador === "Actualizando...") {
-        document.getElementById('mensaje-espera').style.display = 'none';
-        document.getElementById('controles-juego').style.display = 'block';
+    // Si el servidor envía mensajes de sistema, no mostramos el resultado de apuesta
+    if (["REINICIO DE DINERO", "Actualizando...", "¡Dinero Reiniciado!"].includes(data.ganador)) {
+        if (data.players[miNombre]) {
+            currentPuntos = data.players[miNombre].puntos;
+            document.getElementById('display-puntos').innerText = "$" + currentPuntos;
+        }
         return;
     }
 
@@ -131,14 +135,9 @@ socket.on('round_result', (data) => {
     }
 });
 
-// MODIFICADO: Ahora el evento new_game tiene un candado de seguridad
 socket.on('new_game', (game) => {
-    console.log("Nueva ronda iniciada por el Admin");
-    
-    // Ocultar mensaje y forzar botones
     document.getElementById('mensaje-espera').style.display = 'none';
     document.getElementById('controles-juego').style.display = 'block';
-    
     document.getElementById('ronda-display').innerText = "RONDA " + game.ronda;
     
     renderizarBotones(game.options);
@@ -149,8 +148,4 @@ socket.on('new_game', (game) => {
 socket.on('update_puntos', (data) => {
     currentPuntos = data.puntos;
     document.getElementById('display-puntos').innerText = "$" + currentPuntos;
-    if (currentPuntos > 0 && document.getElementById('mensaje-espera').innerHTML.includes("BANCA ROTA")) {
-        document.getElementById('mensaje-espera').style.display = 'none';
-        document.getElementById('controles-juego').style.display = 'block';
-    }
 });
