@@ -131,10 +131,15 @@ socket.on('round_result', (data) => {
     }
 });
 
+// MODIFICADO: Ahora el evento new_game tiene un candado de seguridad
 socket.on('new_game', (game) => {
-    document.getElementById('ronda-display').innerText = "RONDA " + game.ronda;
-    document.getElementById('controles-juego').style.display = 'block';
+    console.log("Nueva ronda iniciada por el Admin");
+    
+    // Ocultar mensaje y forzar botones
     document.getElementById('mensaje-espera').style.display = 'none';
+    document.getElementById('controles-juego').style.display = 'block';
+    
+    document.getElementById('ronda-display').innerText = "RONDA " + game.ronda;
     
     renderizarBotones(game.options);
     opcionElegida = null;
