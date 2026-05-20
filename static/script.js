@@ -103,25 +103,38 @@ socket.on('round_result', (data) => {
     
     if (data.ganador === "Esperando..." || data.ganador === "Actualizando...") return;
 
-    // 1. Ocultar botones y mostrar mensaje centrado
+    // 1. OCULTAMOS CONTROLES Y FORZAMOS VISIBILIDAD DEL MENSAJE
     document.getElementById('controles-juego').style.display = 'none'; 
-    msgArea.style.display = 'flex'; // Usamos flex para centrar contenido
+    
+    // Forzamos el estilo aquí mismo para evitar problemas con el CSS
+    msgArea.style.display = 'flex'; 
+    msgArea.style.flexDirection = 'column';
+    msgArea.style.justifyContent = 'center';
+    msgArea.style.alignItems = 'center';
+    msgArea.style.height = '60vh'; // Ajustado para centrar verticalmente
 
     // 2. Definir resultado
     let resultadoHTML = (opcionElegida !== null && String(opcionElegida) === String(data.ganador)) 
-        ? "<h1 style='color: lime;'>¡GANASTE! 🎉</h1>" 
-        : (opcionElegida !== null ? "<h1 style='color: red;'>MÁS SUERTE... 💀</h1>" : "<h1 style='color: #ffa500;'>PIERDE $50 POR NO APOSTAR 💸</h1>");
+        ? "<h1 style='color: lime; font-size: 2.5rem;'>¡GANASTE! 🎉</h1>" 
+        : (opcionElegida !== null ? "<h1 style='color: red; font-size: 2.5rem;'>MÁS SUERTE... 💀</h1>" : "<h1 style='color: #ffa500; font-size: 2rem;'>PIERDE $50 POR NO APOSTAR 💸</h1>");
 
-    // 3. Añadir el mensaje de espera permanente
+    // 3. Escribir el mensaje
     msgArea.innerHTML = `
-        <div style="width: 100%;">
+        <div style="text-align: center;">
             ${resultadoHTML}
-            <div style="margin-top: 20px; border-top: 1px solid #444; padding-top: 15px;">
-                <h2 style="color: gold; font-size: 1.4rem;">RONDA TERMINADA</h2>
-                <p>Espera a que el host inicie la siguiente... 🍀</p>
+            <div style="margin-top: 30px; border-top: 2px solid gold; padding-top: 20px;">
+                <h2 style="color: gold; font-size: 1.5rem;">RONDA TERMINADA</h2>
+                <p style="color: white; font-size: 1.2rem;">Espera a que el host inicie la siguiente... 🍀</p>
             </div>
         </div>
     `;
+
+    // 4. Actualizar saldo
+    if (data.players[miNombre]) {
+        currentPuntos = data.players[miNombre].puntos;
+        document.getElementById('display-puntos').innerText = "$" + currentPuntos;
+    }
+});
 
     // 4. Actualizar saldo
     if (data.players[miNombre]) {
