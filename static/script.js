@@ -75,40 +75,51 @@ function confirmarApuesta() {
 
 // --- ESCUCHADORES ---
 
+// 1. Carga inicial (Actualizado)
 socket.on('update_data', (data) => {
     currentPuntos = data.puntos;
     listaGlobalJugadores = data.players || {}; 
     document.getElementById('display-puntos').innerText = "$" + currentPuntos;
     document.getElementById('ronda-display').innerText = "RONDA " + data.game.ronda;
     
-    if (currentPuntos <= 0) mostrarBancaRota();
-    else if (data.game.status === "esperando") {
+    if (currentPuntos <= 0) {
+        mostrarBancaRota();
+    } else if (data.game.status === "esperando") {
         document.getElementById('controles-juego').style.display = 'none';
-        document.getElementById('mensaje-espera').style.display = 'block';
-        document.getElementById('mensaje-espera').innerHTML = "<h2>¡BIENVENIDO! 🎰</h2><p>Espera a que el host inicie las apuestas...</p>";
+        const msgArea = document.getElementById('mensaje-espera');
+        msgArea.style.display = 'flex'; // Usamos flex para centrar
+        msgArea.innerHTML = "<h2>¡BIENVENIDO! 🎰</h2><p>Espera a que el host inicie las apuestas...</p>";
+    } else {
+        // Si el juego está activo, ocultamos el mensaje y mostramos controles
+        document.getElementById('mensaje-espera').style.display = 'none';
+        document.getElementById('controles-juego').style.display = 'block';
     }
 });
 
+// 2. Resultado de ronda (Actualizado)
 socket.on('round_result', (data) => {
     listaGlobalJugadores = data.players;
     const msgArea = document.getElementById('mensaje-espera');
     
     if (data.ganador === "Esperando..." || data.ganador === "Actualizando...") return;
 
-    // 1. Ocultar botones y mostrar mensaje
+    // 1. Ocultar botones y mostrar mensaje centrado
     document.getElementById('controles-juego').style.display = 'none'; 
-    msgArea.style.display = 'block';
+    msgArea.style.display = 'flex'; // Usamos flex para centrar contenido
 
-    // 2. Definir texto
-    msgArea.innerHTML = (opcionElegida !== null && String(opcionElegida) === String(data.ganador)) 
+    // 2. Definir resultado
+    let resultadoHTML = (opcionElegida !== null && String(opcionElegida) === String(data.ganador)) 
         ? "<h1 style='color: lime;'>¡GANASTE! 🎉</h1>" 
         : (opcionElegida !== null ? "<h1 style='color: red;'>MÁS SUERTE... 💀</h1>" : "<h1 style='color: #ffa500;'>PIERDE $50 POR NO APOSTAR 💸</h1>");
 
-    // 3. Añadir el mensaje de espera permanente debajo del resultado
-    msgArea.innerHTML += `
-        <div style="margin-top: 15px; border-top: 1px solid #444; padding-top: 10px;">
-            <h2 style="color: gold; font-size: 1.2rem;">RONDA TERMINADA</h2>
-            <p>Espera a que el host inicie la siguiente... 🍀</p>
+    // 3. Añadir el mensaje de espera permanente
+    msgArea.innerHTML = `
+        <div style="width: 100%;">
+            ${resultadoHTML}
+            <div style="margin-top: 20px; border-top: 1px solid #444; padding-top: 15px;">
+                <h2 style="color: gold; font-size: 1.4rem;">RONDA TERMINADA</h2>
+                <p>Espera a que el host inicie la siguiente... 🍀</p>
+            </div>
         </div>
     `;
 
