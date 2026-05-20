@@ -6,40 +6,30 @@ let miNombre = localStorage.getItem('casino_name');
 let currentPuntos = 1000;
 let opcionElegida = null;
 let montoElegido = 0;
-let listaGlobalJugadores = {}; // Para alimentar el ranking modal
+let listaGlobalJugadores = {};
 
-// Al conectar, informamos al servidor quién es este jugador
+// Al conectar
 socket.on('connect', () => {
-    if (!miNombre) {
-        window.location.href = "/"; // Si no hay nombre, al login
-    }
+    if (!miNombre) window.location.href = "/";
     socket.emit('join', { name: miNombre });
 });
 
-/**
- * Muestra el mensaje de quiebra definitiva
- */
 function mostrarBancaRota() {
     const msgArea = document.getElementById('mensaje-espera');
     const controles = document.getElementById('controles-juego');
-    
     if (controles) controles.style.display = 'none';
     if (msgArea) {
         msgArea.style.display = 'block';
         msgArea.innerHTML = `
             <h1 style="color: #ff4444; font-size: 3rem; text-shadow: 0 0 15px red;">¡BANCA ROTA! 💀</h1>
-            <p style="color: white; font-size: 1.2rem;">Has perdido todo tu dinero. <br>Espera a un bono del host para volver al juego.</p>
+            <p style="color: white; font-size: 1.2rem;">Has perdido todo tu dinero. <br>Espera a un bono del host.</p>
         `;
     }
 }
 
-/**
- * Genera los botones de juego dinámicamente (Dados, Cartas, etc.)
- */
 function renderizarBotones(opciones) {
     const contenedor = document.getElementById('contenedor-opciones');
     if (!contenedor) return;
-    
     contenedor.innerHTML = ''; 
     opciones.forEach(op => {
         const btn = document.createElement('button');
@@ -58,49 +48,24 @@ function seleccionarOpcion(val, elemento) {
 }
 
 function seleccionarPlata(monto, elemento) {
-    if (monto === 'ALL') {
-        montoElegido = currentPuntos;
-    } else if (monto !== "") {
-        montoElegido = parseInt(monto);
-    }
+    if (monto === 'ALL') montoElegido = currentPuntos;
+    else if (monto !== "") montoElegido = parseInt(monto);
+    
     document.querySelectorAll('.apuesta-btn').forEach(b => b.classList.remove('selected-money'));
     if (elemento && elemento.classList.contains('apuesta-btn')) {
         elemento.classList.add('selected-money');
-        document.getElementById('monto-manual').value = ""; 
     }
 }
 
 function confirmarApuesta() {
-    // 1. Verificación de quiebra
-    if (currentPuntos <= 0 && opcionElegida === null) {
-        mostrarBancaRota();
-        return;
-    }
-
-    // Usamos el monto que se guardó al hacer clic en los círculos
+    if (currentPuntos <= 0 && opcionElegida === null) { mostrarBancaRota(); return; }
     let finalMonto = montoElegido;
-
-    // 2. Validación: ¿Eligió un monto?
-    if (finalMonto <= 0) { 
-        alert("Primero selecciona un monto de apuesta."); 
-        return; 
-    }
-
-    // 3. Validación: ¿Tiene dinero suficiente?
-    if (finalMonto > currentPuntos) {
-        alert("¡No tienes suficiente dinero!"); 
-        return; 
-    }
-
-    // 4. Validación: ¿Eligió una opción?
-    if (!opcionElegida) { 
-        alert("Elige un número o pinta primero."); 
-        return; 
-    }
+    if (finalMonto <= 0) { alert("Selecciona un monto."); return; }
+    if (finalMonto > currentPuntos) { alert("¡No tienes suficiente dinero!"); return; }
+    if (!opcionElegida) { alert("Elige una opción primero."); return; }
 
     if (confirm(`¿Confirmar apuesta de $${finalMonto} al ${opcionElegida}?`)) {
         socket.emit('place_bet', { name: miNombre, monto: finalMonto, opcion: opcionElegida });
-        
         document.getElementById('controles-juego').style.display = 'none';
         const msg = document.getElementById('mensaje-espera');
         msg.innerHTML = "⌛ APUESTA ENVIADA... <br> ESPERANDO AL ADMIN";
@@ -108,122 +73,58 @@ function confirmarApuesta() {
     }
 }
 
-// --- ESCUCHADORES (SOCKETS) ---
+// --- ESCUCHADORES ---
 
-// 1. Carga inicial y Bienvenida
 socket.on('update_data', (data) => {
     currentPuntos = data.puntos;
     listaGlobalJugadores = data.players || {}; 
     document.getElementById('display-puntos').innerText = "$" + currentPuntos;
     document.getElementById('ronda-display').innerText = "RONDA " + data.game.ronda;
     
-    const msgArea = document.getElementById('mensaje-espera');
-    const controles = document.getElementById('controles-juego');
-
-    if (currentPuntos <= 0) {
-        mostrarBancaRota();
-    } else if (data.game.status === "esperando") {
-        controles.style.display = 'none';
-        msgArea.style.display = 'block';
-        msgArea.innerHTML = `
-            <h2 style="color: gold; font-size: 2rem;">¡BIENVENIDO! 🎰</h2>
-            <p style="font-size: 1.1rem;">Espera a que el host inicie las apuestas... <br><b>¡Mucha suerte!</b></p>
-        `;
-    } else {
-        controles.style.display = 'block';
-        msgArea.style.display = 'none';
-        renderizarBotones(data.game.options);
+    if (currentPuntos <= 0) mostrarBancaRota();
+    else if (data.game.status === "esperando") {
+        document.getElementById('controles-juego').style.display = 'none';
+        document.getElementById('mensaje-espera').style.display = 'block';
+        document.getElementById('mensaje-espera').innerHTML = "<h2>¡BIENVENIDO! 🎰</h2><p>Espera a que el host inicie las apuestas...</p>";
     }
 });
 
-// 2. Ajuste en el resultado de ronda
 socket.on('round_result', (data) => {
-    const ganador = data.ganador;
+    listaGlobalJugadores = data.players;
     const msgArea = document.getElementById('mensaje-espera');
-    
-    // Si el ganador es un mensaje de sistema, no mostramos nada
-    if (ganador === "Esperando..." || ganador === "Actualizando..." || ganador === "REINICIO DE DINERO") return;
+    if (data.ganador === "Esperando..." || data.ganador === "Actualizando...") return;
 
     msgArea.style.display = 'block';
     document.getElementById('controles-juego').style.display = 'none';
 
-    // 1. Mostrar Ganaste/Perdiste/Penalización
-    if (opcionElegida !== null) {
-        if (String(opcionElegida) === String(ganador)) {
-            msgArea.innerHTML = "<h1 style='color: lime;'>¡GANASTE! 🎉</h1>";
-        } else {
-            msgArea.innerHTML = "<h1 style='color: red;'>MÁS SUERTE PARA LA PRÓXIMA 💀</h1>";
-        }
-    } else {
-        msgArea.innerHTML = "<h1 style='color: #ffa500;'>PIERDE $50 POR NO APOSTAR 💸</h1>";
-    }
+    msgArea.innerHTML = (opcionElegida !== null && String(opcionElegida) === String(data.ganador)) 
+        ? "<h1 style='color: lime;'>¡GANASTE! 🎉</h1>" 
+        : (opcionElegida !== null ? "<h1 style='color: red;'>MÁS SUERTE... 💀</h1>" : "<h1 style='color: #ffa500;'>PIERDE $50 POR NO APOSTAR 💸</h1>");
 
-    // 2. Actualizar saldo
     if (data.players[miNombre]) {
         currentPuntos = data.players[miNombre].puntos;
         document.getElementById('display-puntos').innerText = "$" + currentPuntos;
     }
-
-    // 3. CAMBIO CLAVE: Después de 4 segundos, mostrar mensaje de espera y NO mostrar los botones
-    setTimeout(() => {
-        // Solo mostramos espera si NO está en banca rota
-        if (currentPuntos > 0) {
-            msgArea.innerHTML = `
-                <h2 style="color: gold;">RONDA TERMINADA</h2>
-                <p>Espera a que el host inicie la siguiente... 🍀</p>
-            `;
-            // IMPORTANTE: Mantenemos 'controles-juego' en display: none
-            document.getElementById('controles-juego').style.display = 'none';
-        } else {
-            mostrarBancaRota();
-        }
-    }, 4000);
 });
 
-// 3. Cuando el Admin inicia la ronda, ahí recién aparecen los botones
+// ESTE ES EL ÚNICO NEW_GAME QUE DEBE EXISTIR
 socket.on('new_game', (game) => {
-    // Si está en Banca Rota, bloqueamos
-    if (currentPuntos <= 0) {
-        mostrarBancaRota();
-        return;
-    }
+    if (currentPuntos <= 0) { mostrarBancaRota(); return; }
     
-    // Ocultar mensaje de espera y MOSTRAR controles
-    document.getElementById('mensaje-espera').style.display = 'none';
-    document.getElementById('controles-juego').style.display = 'block';
-    
-    // Actualizar visual
-    renderizarBotones(game.options);
     document.getElementById('ronda-display').innerText = "RONDA " + game.ronda;
+    document.getElementById('controles-juego').style.display = 'block';
+    document.getElementById('mensaje-espera').style.display = 'none';
     
-    // Reset visual
-    document.querySelectorAll('.selected, .selected-money').forEach(el => el.classList.remove('selected', 'selected-money'));
+    renderizarBotones(game.options);
     opcionElegida = null;
     montoElegido = 0;
 });
 
-// 4. Nueva Ronda / Cambio de Visual
-socket.on('new_game', (game) => {
-    if (currentPuntos <= 0) {
-        mostrarBancaRota();
-        return;
+socket.on('update_puntos', (data) => {
+    currentPuntos = data.puntos;
+    document.getElementById('display-puntos').innerText = "$" + currentPuntos;
+    if (currentPuntos > 0 && document.getElementById('mensaje-espera').innerHTML.includes("BANCA ROTA")) {
+        document.getElementById('mensaje-espera').style.display = 'none';
+        document.getElementById('controles-juego').style.display = 'block';
     }
-    document.getElementById('ronda-display').innerText = "RONDA " + game.ronda;
-    document.getElementById('controles-juego').style.display = 'block';
-    document.getElementById('mensaje-espera').style.display = 'none';
-    renderizarBotones(game.options);
-    document.querySelectorAll('.selected, .selected-money').forEach(el => el.classList.remove('selected', 'selected-money'));
-});
-
-// 5. Gestión de expulsión y reinicio
-socket.on('game_reset_done', () => { 
-    localStorage.removeItem('casino_name'); 
-    window.location.href = "/"; 
-});
-
-socket.on('player_kicked', (data) => { 
-    if (miNombre === data.target) { 
-        localStorage.removeItem('casino_name'); 
-        window.location.href = "/"; 
-    } 
 });
