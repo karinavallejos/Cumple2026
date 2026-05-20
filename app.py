@@ -138,6 +138,42 @@ def handle_reset_all():
     global players
     players.clear() 
     emit('game_reset_done', broadcast=True)
+# --- EVENTO ADMIN: CAMBIAR VISUAL ---
+@socketio.on('admin_start_round')
+def admin_start_round(data):
+    # Esto es lo que inicia una ronda: pide visual y opciones
+    current_game['view'] = data['view']
+    current_game['options'] = data['options']
+    current_game['status'] = 'apostando'
+    current_game['ronda'] += 1
+    
+    # Limpiamos apuestas anteriores al iniciar nueva ronda
+    for name in players:
+        players[name]['aposto'] = False
+        players[name]['apuesta_valor'] = 0
+        players[name]['opcion'] = None
+        
+    emit('new_game', current_game, broadcast=True)
+    emit('admin_update', {'players': players}, broadcast=False) # Admin recibe lista
 
+@socketio.on('admin_resolve')
+def resolve(data):
+    ganador = data['ganador']
+    for user, info in players.items():
+        if info['aposto']:
+            if str(info['opcion']) == str(ganador):
+                players[user]['puntos'] += (info['apuesta_valor'] * 2)
+        else:
+            players[user]['puntos'] = max(0, players[user]['puntos'] - 50)
+        
+        players[user]['aposto'] = False # Limpiar estado
+            
+    emit('round_result', {'ganador': ganador, 'players': players}, broadcast=True)
+    emit('admin_update', {'players': players}, broadcast=True) # Admin ve dinero en tiempo real
+
+# Agrega esto para que el admin siempre tenga la lista al día
+@socketio.on('admin_get_players')
+def get_players():
+    emit('admin_update', {'players': players}, broadcast=False)
 if __name__ == '__main__':
     socketio.run(app, debug=True)
