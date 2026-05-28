@@ -25,6 +25,8 @@
         #visual-actual { margin-top: 10px; color: #00ff00; font-weight: bold; }
         #rapido-dulces { display: none; margin-top: 12px; padding: 12px; border: 1px solid #00cc66; border-radius: 8px; background: #102418; color: white; text-align: center; font-weight: bold; }
         .winner-btn { width: 60px; height: 60px; font-size: 1.5rem; border: 2px solid transparent; }
+        .color-btn { color: transparent; text-shadow: none; }
+        .btn-roulette { display: none; background: #9b5cff; color: white; width: 100%; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -41,7 +43,7 @@
         <h3>1. Elegir Visual</h3>
         <button type="button" data-visual="dados" onclick="cambiarVisual('dados', ['1','2','3','4','5','6'])">DADOS</button>
         <button type="button" data-visual="cartas" onclick="cambiarVisual('cartas', ['\u2665','\u2666','\u2663','\u2660'])">CARTAS</button>
-        <button type="button" data-visual="especial" onclick="cambiarVisual('especial', ['ROJO','NEGRO'])">COLORES</button>
+        <button type="button" data-visual="especial" onclick="cambiarVisual('especial', ['ROJO','NEGRO','VERDE','AZUL','BLANCO','AMARILLO'])">COLORES</button>
         <button type="button" data-visual="dulces" onclick="cambiarVisual('dulces', ['35','36','37','38','39','40','41','42'])">DULCES</button>
         <button type="button" class="btn-confirm-visual" onclick="confirmarVisual()">CONFIRMAR VISUAL</button>
         <div id="visual-actual">Visual actual: sin seleccionar</div>
@@ -52,6 +54,7 @@
         <div id="botones-resolucion" style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;"></div>
         <input type="text" id="resultadoGanador" readonly style="width: 90%; text-align: center; margin-top: 10px;">
         <div id="rapido-dulces"></div>
+        <button type="button" onclick="activarRuleta()" class="btn-roulette">ACTIVAR RULETA</button>
         <button type="button" onclick="resolver()" class="btn-resolve">PAGAR Y FINALIZAR RONDA</button>
         <button type="button" onclick="siguienteRonda()" class="btn-next">INICIAR SIGUIENTE RONDA</button>
     </div>
@@ -76,6 +79,14 @@
         let gameRound = 1;
         let currentView = "ninguna";
         let visualPendiente = null;
+        const colorStyles = {
+            ROJO: { background: "#d71920", color: "#d71920", border: "#ffb3b3" },
+            NEGRO: { background: "#050505", color: "#050505", border: "#ffffff" },
+            VERDE: { background: "#00a651", color: "#00a651", border: "#c7ffd8" },
+            AZUL: { background: "#0077ff", color: "#0077ff", border: "#cce3ff" },
+            BLANCO: { background: "#ffffff", color: "#ffffff", border: "#999999" },
+            AMARILLO: { background: "#ffd400", color: "#ffd400", border: "#fff2a0" }
+        };
 
         const estadoTexto = {
             esperando: "Esperando que inicies la ronda",
@@ -94,7 +105,13 @@
 
         socket.on('round_result', (data) => {
             actualizarLista(data.players);
+            if (data.ganador) document.getElementById('resultadoGanador').value = data.ganador;
             mostrarRapidoDulces(data.ganador_rapido_dulces);
+        });
+
+        socket.on('roulette_spin', (data) => {
+            document.getElementById('resultadoGanador').value = "RULETA GIRANDO...";
+            document.querySelector('.btn-roulette').disabled = true;
         });
 
         socket.on('update_data', (data) => {
@@ -133,6 +150,7 @@
             const puedeElegirVisual = gameStatus === "preparando";
             const puedeResolver = gameStatus === "apostando";
             const puedeIniciar = gameStatus === "esperando" || gameStatus === "finalizada";
+            const esColores = currentView === "especial";
 
             document.querySelectorAll('[data-visual]').forEach(btn => {
                 btn.disabled = !puedeElegirVisual;
@@ -142,9 +160,11 @@
                 btn.disabled = !puedeResolver;
             });
 
-            document.querySelector('.btn-resolve').disabled = !puedeResolver;
+            document.querySelector('.btn-resolve').disabled = !puedeResolver || esColores;
             document.querySelector('.btn-next').disabled = !puedeIniciar;
             document.querySelector('.btn-confirm-visual').disabled = !puedeElegirVisual || !visualPendiente;
+            document.querySelector('.btn-roulette').style.display = esColores ? 'block' : 'none';
+            document.querySelector('.btn-roulette').disabled = !(puedeResolver && esColores);
         }
 
         function actualizarLista(players) {
@@ -178,6 +198,7 @@
                 btn.type = "button";
                 btn.className = "winner-btn";
                 btn.innerText = opt;
+                aplicarEstiloColor(btn, opt);
                 btn.onclick = () => {
                     document.getElementById('resultadoGanador').value = opt;
                     document.querySelectorAll('.winner-btn').forEach(b => b.style.border = "2px solid transparent");
@@ -242,6 +263,25 @@
             socket.emit('admin_next_round');
             visualPendiente = null;
             limpiarRapidoDulces();
+        }
+
+        function activarRuleta() {
+            if (gameStatus !== "apostando" || currentView !== "especial") {
+                alert("La ruleta solo se puede activar en una ronda de colores.");
+                return;
+            }
+
+            socket.emit('admin_spin_roulette');
+        }
+
+        function aplicarEstiloColor(btn, color) {
+            const estilo = colorStyles[color];
+            if (!estilo) return;
+
+            btn.classList.add('color-btn');
+            btn.style.background = estilo.background;
+            btn.style.color = estilo.color;
+            btn.style.borderColor = estilo.border;
         }
 
         function mostrarRapidoDulces(nombre) {
