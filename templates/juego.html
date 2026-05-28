@@ -9,24 +9,24 @@
     <style>
         /* --- ESTILOS DE LA CABECERA COMPACTA --- */
         .header-vegas img {
-            width: 170px;
-            max-width: 45vw;
-            margin-bottom: 2px;
+            width: 140px;
+            max-width: 38vw;
+            margin-bottom: 0;
         }
 
         #ronda-display {
             color: gold;
             font-weight: bold;
-            font-size: 0.85rem;
-            margin-bottom: 2px;
+            font-size: 0.78rem;
+            margin-bottom: 1px;
             text-transform: uppercase;
         }
 
-        /* Óvalo de dinero con halo de brillo */
+        /* Ovalo de dinero con halo de brillo */
         .puntos-header {
             display: inline-block;
             margin: 0 auto;
-            padding: 5px 45px;
+            padding: 3px 34px;
             border: 3px solid gold;
             border-radius: 50px;
             background: rgba(255, 215, 0, 0.05);
@@ -34,8 +34,8 @@
         }
 
         #display-puntos {
-            font-size: 2.6rem;
-            color: white; /* Dinero en blanco */
+            font-size: 2.05rem;
+            color: white;
             font-weight: bold;
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 2px 2px 5px black;
         }
@@ -44,22 +44,22 @@
         .grid-apuestas {
             display: grid;
             grid-template-columns: repeat(3, 1fr); 
-            gap: 12px;
+            gap: 8px;
             width: 100%;
-            max-width: 340px;
-            margin: 15px auto;
+            max-width: 285px;
+            margin: 8px auto;
             justify-items: center;
         }
 
         .circulo-btn {
-            width: 72px;
-            height: 72px;
+            width: 58px;
+            height: 58px;
             border-radius: 50%;
             border: 2px solid gold;
             background: #222;
             color: white;
             font-weight: bold;
-            font-size: 1.1rem;
+            font-size: 0.9rem;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -95,14 +95,14 @@
         .btn-confirmar {
             width: 100%;
             max-width: 320px;
-            height: 55px;
+            height: 46px;
             background: #00ff00;
             color: black;
             font-weight: bold;
-            font-size: 1.3rem;
+            font-size: 1.08rem;
             border-radius: 30px;
             border: none;
-            margin-top: 10px;
+            margin-top: 6px;
             box-shadow: 0 5px 15px rgba(0,255,0,0.4);
             cursor: pointer;
         }
@@ -140,12 +140,88 @@
 
         .tabla-ranking th { color: gold; border-bottom: 1px solid gold; padding: 10px; }
         .tabla-ranking td { padding: 8px; border-bottom: 1px solid #222; }
+
+        #modal-ruleta {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            inset: 0;
+            background: rgba(0,0,0,0.94);
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .ruleta-wheel {
+            width: min(78vw, 360px);
+            height: min(78vw, 360px);
+            border-radius: 50%;
+            border: 8px solid gold;
+            box-shadow: 0 0 35px rgba(255, 215, 0, 0.75);
+            background: conic-gradient(#d71920 0deg 60deg, #050505 60deg 120deg, #00a651 120deg 180deg, #0077ff 180deg 240deg, #ffffff 240deg 300deg, #ffd400 300deg 360deg);
+        }
+
+        .ruleta-wheel.spinning {
+            animation: spinRoulette 4.5s cubic-bezier(.12,.72,.2,1) forwards;
+        }
+
+        .ruleta-pointer {
+            width: 0;
+            height: 0;
+            border-left: 18px solid transparent;
+            border-right: 18px solid transparent;
+            border-top: 34px solid gold;
+            filter: drop-shadow(0 0 8px gold);
+        }
+
+        #ruleta-resultado {
+            min-height: 36px;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        @keyframes spinRoulette {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(1840deg); }
+        }
+
+        #chicharra-panel {
+            display: none;
+            min-height: 100vh;
+            padding: 14px;
+            box-sizing: border-box;
+            background: black;
+            color: white;
+            text-align: center;
+        }
+
+        .chicharra-card { max-width: 430px; margin: 0 auto; }
+        .chicharra-title { color: gold; margin: 4px 0 10px; font-size: 1.5rem; text-shadow: 0 0 10px gold; }
+        .chicharra-select { width: 100%; margin: 6px 0; padding: 12px; border-radius: 8px; border: 1px solid gold; background: #111; color: white; font-weight: bold; }
+        .chicharra-btn {
+            width: min(78vw, 250px);
+            height: min(78vw, 250px);
+            border-radius: 50%;
+            border: 8px solid gold;
+            background: radial-gradient(circle, #ff3333 0%, #8b0000 70%);
+            color: white;
+            font-size: 1.8rem;
+            font-weight: bold;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.75);
+            margin: 12px auto;
+        }
+        .chicharra-btn:disabled { filter: grayscale(0.7); opacity: 0.55; }
+        .mesa-score-list, .buzz-list { margin-top: 10px; border-top: 1px solid #333; padding-top: 8px; text-align: left; }
+        .buzz-list div, .mesa-score-list div { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px solid #222; }
     </style>
 </head>
-<body style="background-color: black; color: white; margin: 0; display: flex; flex-direction: column; min-height: 100vh; text-align: center; font-family: sans-serif;">
+<body style="background-color: black; color: white; margin: 0; display: flex; flex-direction: column; min-height: 100dvh; text-align: center; font-family: sans-serif;">
 
     <!-- CABECERA -->
-    <div style="padding: 5px 0 10px 0; background: #111; border-bottom: 2px solid #333;">
+    <div id="casino-header" style="padding: 2px 0 5px 0; background: #111; border-bottom: 2px solid #333;">
         <div class="header-vegas">
             <img src="/static/logo-vegas.svg" alt="Las Vegas">
         </div>
@@ -154,49 +230,65 @@
             <span id="display-puntos">$1000</span>
         </div>
     </div>
-    <div id="mensaje-espera"></div>
-    <!-- ÁREA DE JUEGO CENTRAL -->
-    <div style="flex: 1; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-        
-        <!-- Mensajes de Estado (Ganaste/Perdiste/Banca Rota) -->
+    <!-- AREA DE JUEGO CENTRAL -->
+    <div id="casino-main" style="flex: 1; padding: 6px 8px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;">
         <div id="mensaje-espera" style="display: none;"></div>
 
-        <!-- Panel de Apuestas -->
         <div id="controles-juego" style="width: 100%;">
-            <h3 style="color: gold; text-transform: uppercase; margin-bottom: 10px; font-size: 1rem;">Elige tu opción</h3>
+            <h3 style="color: gold; text-transform: uppercase; margin: 6px 0; font-size: 0.9rem;">Elige tu opcion</h3>
             <div id="contenedor-opciones" class="grid-opciones"></div>
 
-            <hr style="border: 0.5px solid #333; width: 100%; margin: 15px 0;">
+            <hr style="border: 0.5px solid #333; width: 100%; margin: 8px 0;">
 
-            <h3 style="color: gold; text-transform: uppercase; margin-bottom: 10px; font-size: 1rem;">Monto de Apuesta</h3>
-            
+            <h3 style="color: gold; text-transform: uppercase; margin: 6px 0; font-size: 0.9rem;">Monto de Apuesta</h3>
             <div class="grid-apuestas">
                 <button class="circulo-btn apuesta-btn" onclick="seleccionarPlata(50, this)">$50</button>
                 <button class="circulo-btn apuesta-btn" onclick="seleccionarPlata(100, this)">$100</button>
                 <button class="circulo-btn apuesta-btn" onclick="seleccionarPlata(200, this)">$200</button>
-                
                 <button class="circulo-btn apuesta-btn" onclick="seleccionarPlata(300, this)">$300</button>
                 <button class="circulo-btn apuesta-btn" onclick="seleccionarPlata(500, this)">$500</button>
                 <button class="circulo-btn apuesta-btn all-in" onclick="seleccionarPlata('ALL', this)">ALL IN</button>
             </div>
 
             <button onclick="confirmarApuesta()" class="btn-confirmar">
-                APOSTAR AHORA 🎰
+                APOSTAR AHORA
             </button>
         </div>
     </div>
-    
-    <!-- PIE DE PÁGINA CON BOTÓN DE RANKING -->
-    <div style="padding: 12px; background: #0a0a0a; border-top: 1px solid #333;">
+
+    <div id="casino-footer" style="padding: 8px; background: #0a0a0a; border-top: 1px solid #333;">
         <div onclick="abrirRanking()" style="cursor: pointer; color: gold; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <span>🏆</span> VER TABLA DE POSICIONES
+            VER TABLA DE POSICIONES
         </div>
     </div>
 
-    <!-- MODAL EMERGENTE DEL RANKING -->
+    <div id="chicharra-panel">
+        <div class="chicharra-card">
+            <img src="/static/logo-vegas.svg" alt="Las Vegas" style="width: 130px; max-width: 42vw;">
+            <h1 class="chicharra-title">CHICHARRA</h1>
+
+            <div id="chicharra-registro">
+                <select id="chicharra-nombre" class="chicharra-select"></select>
+                <select id="chicharra-mesa" class="chicharra-select"></select>
+                <button type="button" onclick="registrarChicharra()" class="btn-confirmar">ENTRAR</button>
+            </div>
+
+            <div id="chicharra-juego" style="display: none;">
+                <div id="chicharra-cancion" style="color: gold; font-weight: bold;">Cancion 0</div>
+                <div id="chicharra-mesa-actual" style="margin-top: 4px;"></div>
+                <button id="btn-chicharra" type="button" onclick="tocarChicharra()" class="chicharra-btn">CHICHARRA</button>
+                <div id="chicharra-estado" style="font-weight: bold;"></div>
+                <button type="button" onclick="togglePuntosMesas()" style="margin-top: 8px; padding: 10px 14px; background: gold; border: none; border-radius: 8px; font-weight: bold;">VER PUNTOS MESAS</button>
+                <div id="puntos-mesas" class="mesa-score-list" style="display: none;"></div>
+                <h3 style="color: gold; margin: 12px 0 4px;">Primeros 15</h3>
+                <div id="chicharra-orden" class="buzz-list"></div>
+            </div>
+        </div>
+    </div>
+
     <div id="modal-ranking">
         <div class="modal-content">
-            <h2 style="color: gold; text-shadow: 0 0 10px gold;">🏆 RANKING</h2>
+            <h2 style="color: gold; text-shadow: 0 0 10px gold;">RANKING</h2>
             <div style="max-height: 300px; overflow-y: auto;">
                 <table class="tabla-ranking">
                     <thead>
@@ -206,9 +298,7 @@
                             <th style="text-align: right;">PUNTOS</th>
                         </tr>
                     </thead>
-                    <tbody id="tabla-body-ranking">
-                        <!-- Se llena con JS -->
-                    </tbody>
+                    <tbody id="tabla-body-ranking"></tbody>
                 </table>
             </div>
             <button onclick="cerrarRanking()" style="margin-top: 20px; width: 100%; padding: 12px; background: gold; color: black; font-weight: bold; border-radius: 10px; border: none; cursor: pointer;">
@@ -217,17 +307,20 @@
         </div>
     </div>
 
+    <div id="modal-ruleta">
+        <h1 style="color: gold; margin: 0;">RULETA DE COLORES</h1>
+        <div class="ruleta-pointer"></div>
+        <div id="ruleta-wheel" class="ruleta-wheel"></div>
+        <div id="ruleta-resultado">Girando...</div>
+    </div>
+
     <script src="/static/script.js"></script>
 
-    <!-- Script interno para el Modal -->
     <script>
         function abrirRanking() {
-            // La variable 'listaGlobalJugadores' debe actualizarse en tu script.js
             const body = document.getElementById('tabla-body-ranking');
-            body.innerHTML = ""; 
+            body.innerHTML = "";
 
-            // Convertimos los datos de 'players' a lista y ordenamos
-            // Nota: listaGlobalJugadores se llena en el script.js con socket.on('round_result')
             if (typeof listaGlobalJugadores !== 'undefined') {
                 const ordenados = Object.entries(listaGlobalJugadores)
                     .sort((a, b) => b[1].puntos - a[1].puntos);
