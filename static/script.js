@@ -7,6 +7,15 @@ let montoElegido = 0;
 let listaGlobalJugadores = {};
 let apuestaEnviada = false;
 
+const colorStyles = {
+    ROJO: { background: "#d71920", color: "#d71920", border: "#ffb3b3" },
+    NEGRO: { background: "#050505", color: "#050505", border: "#ffffff" },
+    VERDE: { background: "#00a651", color: "#00a651", border: "#c7ffd8" },
+    AZUL: { background: "#0077ff", color: "#0077ff", border: "#cce3ff" },
+    BLANCO: { background: "#ffffff", color: "#ffffff", border: "#999999" },
+    AMARILLO: { background: "#ffd400", color: "#ffd400", border: "#fff2a0" }
+};
+
 socket.on('connect', () => {
     if (!miNombre) window.location.href = "/";
     socket.emit('join', { name: miNombre });
@@ -82,11 +91,22 @@ function renderizarBotones(opciones) {
         const btn = document.createElement('button');
         btn.className = 'opcion-btn';
         btn.innerText = op;
+        aplicarEstiloColor(btn, op);
         btn.onclick = () => seleccionarOpcion(op, btn);
         contenedor.appendChild(btn);
     });
 
     opcionElegida = null;
+}
+
+function aplicarEstiloColor(btn, color) {
+    const estilo = colorStyles[color];
+    if (!estilo) return;
+
+    btn.classList.add('color-option');
+    btn.style.background = estilo.background;
+    btn.style.color = estilo.color;
+    btn.style.borderColor = estilo.border;
 }
 
 function seleccionarOpcion(val, elemento) {
@@ -180,6 +200,7 @@ socket.on('player_kicked', (data) => {
 });
 
 socket.on('round_result', (data) => {
+    ocultarRuleta();
     listaGlobalJugadores = data.players || {};
     actualizarMisPuntos(listaGlobalJugadores);
     apuestaEnviada = false;
@@ -207,6 +228,10 @@ socket.on('round_result', (data) => {
             </div>
         </div>
     `);
+});
+
+socket.on('roulette_spin', (data) => {
+    mostrarRuleta(data);
 });
 
 socket.on('new_game', (game) => {
@@ -237,3 +262,28 @@ socket.on('update_puntos', (data) => {
         mostrarBancaRota();
     }
 });
+
+function mostrarRuleta(data) {
+    ocultarControles();
+    const modal = document.getElementById('modal-ruleta');
+    const wheel = document.getElementById('ruleta-wheel');
+    const resultado = document.getElementById('ruleta-resultado');
+    if (!modal || !wheel || !resultado) return;
+
+    modal.style.display = 'flex';
+    resultado.innerText = 'Girando...';
+    wheel.classList.remove('spinning');
+    void wheel.offsetWidth;
+    wheel.classList.add('spinning');
+
+    setTimeout(() => {
+        resultado.innerText = 'Color ganador: ' + data.ganador;
+    }, data.duration || 4500);
+}
+
+function ocultarRuleta() {
+    const modal = document.getElementById('modal-ruleta');
+    const wheel = document.getElementById('ruleta-wheel');
+    if (modal) modal.style.display = 'none';
+    if (wheel) wheel.classList.remove('spinning');
+}
