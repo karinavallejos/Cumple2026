@@ -25,8 +25,8 @@ function mostrarBancaRota() {
         msgArea.style.alignItems = 'center';
         msgArea.style.height = '60vh';
         msgArea.innerHTML = `
-            <h1 style="color: #ff4444; font-size: 3rem; text-shadow: 0 0 15px red;">Â¡BANCA ROTA! ðŸ’€</h1>
-            <p style="color: white; font-size: 1.2rem;">Has perdido todo tu dinero. <br>Espera a un bono del host.</p>
+            <h1 style="color: #ff4444; font-size: 3rem; text-shadow: 0 0 15px red;">Banca Rota! :c</h1>
+            <p style="color: white; font-size: 1.2rem;">Has perdido todo tu dinero, podrías volver a jugar si te ganas un bono del Host.</p>
         `;
     }
 }
