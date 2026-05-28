@@ -4,6 +4,7 @@ monkey.patch_all()
 from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 import random
+import time
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'cumple_secreto_2026'
@@ -71,6 +72,7 @@ def preparar_siguiente_ronda():
         players[user]['aposto'] = False
         players[user]['opcion'] = None
         players[user]['apuesta_valor'] = 0
+        players[user]['apuesta_ts'] = None
 
     return True
 
@@ -95,7 +97,7 @@ def handle_join(data):
     name = data.get('name')
     if not name: return
     if name not in players:
-        players[name] = {'puntos': puntos_iniciales_jugador(), 'aposto': False, 'apuesta_valor': 0, 'opcion': None}
+        players[name] = {'puntos': puntos_iniciales_jugador(), 'aposto': False, 'apuesta_valor': 0, 'opcion': None, 'apuesta_ts': None}
     
     emit('update_data', {
         'puntos': players[name]['puntos'], 
@@ -118,6 +120,7 @@ def handle_bet(data):
         players[user]['aposto'] = True
         players[user]['apuesta_valor'] = monto
         players[user]['opcion'] = opcion
+        players[user]['apuesta_ts'] = time.time()
         emit('update_puntos', {'puntos': players[user]['puntos']}, broadcast=False)
         emitir_estado_global()
 
@@ -163,6 +166,7 @@ def handle_reset_money():
         players[user]['aposto'] = False
         players[user]['apuesta_valor'] = 0
         players[user]['opcion'] = None
+        players[user]['apuesta_ts'] = None
     reiniciar_ronda()
     emit('money_reset_done', {'players': players, 'game': current_game}, broadcast=True)
     emitir_estado_global()
@@ -199,19 +203,30 @@ def resolve(data):
 
     ganador = data['ganador']
     current_game['status'] = 'finalizada'
+    ganador_rapido = None
+    dulces_ganadores = []
 
     for user, info in players.items():
         if info['aposto']:
             if str(info['opcion']) == str(ganador):
                 players[user]['puntos'] += (info['apuesta_valor'] * 2)
+                if current_game['view'] == 'dulces' and info.get('apuesta_ts') is not None:
+                    dulces_ganadores.append({
+                        'name': user,
+                        'apuesta_ts': info['apuesta_ts']
+                    })
         else:
             players[user]['puntos'] = max(0, players[user]['puntos'] - 50)
-        
+
         players[user]['aposto'] = False
         players[user]['apuesta_valor'] = 0
         players[user]['opcion'] = None
-            
-    emit('round_result', {'ganador': ganador, 'players': players}, broadcast=True)
+        players[user]['apuesta_ts'] = None
+
+    if dulces_ganadores:
+        ganador_rapido = min(dulces_ganadores, key=lambda item: item['apuesta_ts'])['name']
+
+    emit('round_result', {'ganador': ganador, 'players': players, 'ganador_rapido_dulces': ganador_rapido}, broadcast=True)
     emitir_estado_global()
 
 # Agrega esto para que el admin siempre tenga la lista al dÃ­a
@@ -227,6 +242,7 @@ def refund_bets():
             players[name]['aposto'] = False
             players[name]['apuesta_valor'] = 0
             players[name]['opcion'] = None
+            players[name]['apuesta_ts'] = None
     emitir_estado_global()
 if __name__ == '__main__':
     socketio.run(app, debug=True)
