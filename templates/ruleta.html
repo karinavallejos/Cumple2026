@@ -44,20 +44,11 @@
             background: conic-gradient(#d71920 0deg 60deg, #050505 60deg 120deg, #00a651 120deg 180deg, #0077ff 180deg 240deg, #ffffff 240deg 300deg, #ffd400 300deg 360deg);
         }
 
-        .wheel.spinning {
-            animation: spinRoulette 4.5s cubic-bezier(.12,.72,.2,1) forwards;
-        }
-
         #resultado {
             min-height: 36px;
             font-size: 1.5rem;
             font-weight: bold;
             text-transform: uppercase;
-        }
-
-        @keyframes spinRoulette {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(1840deg); }
         }
     </style>
 </head>
@@ -69,19 +60,37 @@
 
     <script>
         const socket = io();
+        const rouletteColorCenters = {
+            ROJO: 30,
+            NEGRO: 90,
+            VERDE: 150,
+            AZUL: 210,
+            BLANCO: 270,
+            AMARILLO: 330
+        };
+
+        function animarRuleta(wheel, ganador, duration) {
+            const center = rouletteColorCenters[ganador] || rouletteColorCenters.AMARILLO;
+            const finalRotation = 1800 + ((360 - center) % 360);
+
+            wheel.style.transition = 'none';
+            wheel.style.transform = 'rotate(0deg)';
+            void wheel.offsetWidth;
+            wheel.style.transition = `transform ${duration}ms cubic-bezier(.12,.72,.2,1)`;
+            wheel.style.transform = `rotate(${finalRotation}deg)`;
+        }
 
         socket.on('roulette_spin', (data) => {
             const wheel = document.getElementById('wheel');
             const resultado = document.getElementById('resultado');
+            const duration = data.duration || 4500;
 
             resultado.innerText = 'Girando...';
-            wheel.classList.remove('spinning');
-            void wheel.offsetWidth;
-            wheel.classList.add('spinning');
+            animarRuleta(wheel, data.ganador, duration);
 
             setTimeout(() => {
                 resultado.innerText = 'Color ganador: ' + data.ganador;
-            }, data.duration || 4500);
+            }, duration);
         });
     </script>
 </body>
