@@ -174,6 +174,8 @@ def admin_start_round(data):
 @socketio.on('admin_resolve')
 def resolve(data):
     ganador = data['ganador']
+    current_game['status'] = 'finalizada'
+
     for user, info in players.items():
         if info['aposto']:
             if str(info['opcion']) == str(ganador):
@@ -186,7 +188,7 @@ def resolve(data):
     emit('round_result', {'ganador': ganador, 'players': players}, broadcast=True)
     emitir_estado_global()
 
-# Agrega esto para que el admin siempre tenga la lista al día
+# Agrega esto para que el admin siempre tenga la lista al dÃ­a
 @socketio.on('admin_get_players')
 def get_players():
     emit('admin_update', {'players': players, 'game': current_game}, broadcast=False)
