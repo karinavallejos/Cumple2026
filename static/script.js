@@ -265,6 +265,7 @@ socket.on('update_puntos', (data) => {
 
 function mostrarRuleta(data) {
     ocultarControles();
+    asegurarModalRuleta();
     const modal = document.getElementById('modal-ruleta');
     const wheel = document.getElementById('ruleta-wheel');
     const resultado = document.getElementById('ruleta-resultado');
@@ -286,4 +287,79 @@ function ocultarRuleta() {
     const wheel = document.getElementById('ruleta-wheel');
     if (modal) modal.style.display = 'none';
     if (wheel) wheel.classList.remove('spinning');
+}
+
+function asegurarModalRuleta() {
+    if (!document.getElementById('ruleta-modal-styles')) {
+        const styles = document.createElement('style');
+        styles.id = 'ruleta-modal-styles';
+        styles.textContent = `
+            #modal-ruleta {
+                display: none;
+                position: fixed;
+                z-index: 2000;
+                inset: 0;
+                background: rgba(0,0,0,0.94);
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                gap: 18px;
+                text-align: center;
+            }
+
+            #modal-ruleta h1 {
+                color: gold;
+                margin: 0;
+                letter-spacing: 0;
+            }
+
+            .ruleta-wheel {
+                width: min(78vw, 360px);
+                height: min(78vw, 360px);
+                border-radius: 50%;
+                border: 8px solid gold;
+                box-shadow: 0 0 35px rgba(255, 215, 0, 0.75);
+                background: conic-gradient(#d71920 0deg 60deg, #050505 60deg 120deg, #00a651 120deg 180deg, #0077ff 180deg 240deg, #ffffff 240deg 300deg, #ffd400 300deg 360deg);
+            }
+
+            .ruleta-wheel.spinning {
+                animation: spinRoulette 4.5s cubic-bezier(.12,.72,.2,1) forwards;
+            }
+
+            .ruleta-pointer {
+                width: 0;
+                height: 0;
+                border-left: 18px solid transparent;
+                border-right: 18px solid transparent;
+                border-top: 34px solid gold;
+                filter: drop-shadow(0 0 8px gold);
+            }
+
+            #ruleta-resultado {
+                min-height: 36px;
+                color: white;
+                font-size: 1.5rem;
+                font-weight: bold;
+                text-transform: uppercase;
+            }
+
+            @keyframes spinRoulette {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(1840deg); }
+            }
+        `;
+        document.head.appendChild(styles);
+    }
+
+    if (!document.getElementById('modal-ruleta')) {
+        const modal = document.createElement('div');
+        modal.id = 'modal-ruleta';
+        modal.innerHTML = `
+            <h1>RULETA DE COLORES</h1>
+            <div class="ruleta-pointer"></div>
+            <div id="ruleta-wheel" class="ruleta-wheel"></div>
+            <div id="ruleta-resultado">Girando...</div>
+        `;
+        document.body.appendChild(modal);
+    }
 }
