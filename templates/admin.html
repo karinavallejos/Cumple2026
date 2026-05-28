@@ -14,6 +14,8 @@
         button.active-visual { outline: 3px solid #00ff00; box-shadow: 0 0 12px #00ff00; }
         .btn-resolve { background: #00ff00; width: 100%; margin-top: 10px; }
         .btn-next { background: #0088ff; color: white; width: 100%; margin-top: 10px; }
+        .btn-reset-money { background: #ffcc00; color: black; width: 100%; margin-top: 10px; }
+        .btn-reset-all { background: #ff4444; color: white; width: 100%; margin-top: 10px; }
         input, select { padding: 10px; border-radius: 5px; background: #333; color: white; border: 1px solid gold; }
         #contador-apuestas { font-size: 3rem; font-weight: bold; color: #00ffff; text-align: center; }
         #visual-actual { margin-top: 10px; color: #00ff00; font-weight: bold; }
@@ -52,6 +54,12 @@
         <button type="button" onclick="darDineroEspecifico()">DAR BONO</button>
     </div>
 
+    <div class="control-group">
+        <h3>Reinicios</h3>
+        <button type="button" onclick="reiniciarMontos()" class="btn-reset-money">REINICIAR MONTOS A $1000</button>
+        <button type="button" onclick="reiniciarJuegoCompleto()" class="btn-reset-all">REINICIAR JUEGO COMPLETO</button>
+    </div>
+
     <script>
         const socket = io();
 
@@ -74,6 +82,13 @@
 
         socket.on('admin_update', (data) => {
             actualizarLista(data.players);
+            if (data.game) marcarVisualActiva(data.game.view);
+        });
+
+        socket.on('state_update', (data) => {
+            actualizarLista(data.players);
+            if (data.game) marcarVisualActiva(data.game.view);
+            if (data.conteo) document.getElementById('contador-apuestas').innerText = data.conteo;
         });
 
         function actualizarLista(players) {
@@ -144,6 +159,18 @@
             const n = document.getElementById('select-jugadores').value;
             const m = document.getElementById('monto-regalo').value;
             if (n && m) socket.emit('admin_give_money_specific', { name: n, monto: m });
+        }
+
+        function reiniciarMontos() {
+            if (confirm("Reiniciar dinero de todos a $1000 y volver a ronda 1?")) {
+                socket.emit('admin_reset_money_only');
+            }
+        }
+
+        function reiniciarJuegoCompleto() {
+            if (confirm("Reiniciar todo el juego? Se borran jugadores, dinero y todos deberan registrarse de nuevo.")) {
+                socket.emit('admin_reset_all');
+            }
         }
 
         socket.emit('admin_get_players');

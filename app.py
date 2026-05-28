@@ -25,6 +25,30 @@ def obtener_estado_apuestas():
     apostaron = sum(1 for p in players.values() if p.get('aposto', False))
     return f"{apostaron}/{total}"
 
+def ordenar_jugadores():
+    return dict(sorted(players.items(), key=lambda item: (-item[1]['puntos'], item[0])))
+
+def estado_global():
+    return {
+        'players': players,
+        'ranking': ordenar_jugadores(),
+        'game': current_game,
+        'conteo': obtener_estado_apuestas()
+    }
+
+def emitir_estado_global():
+    data = estado_global()
+    socketio.emit('state_update', data)
+    socketio.emit('admin_update', {'players': players, 'game': current_game})
+    socketio.emit('ranking_update', {'players': data['ranking'], 'game': current_game})
+    socketio.emit('actualizar_contador', {'conteo': data['conteo']})
+
+def reiniciar_ronda():
+    current_game['view'] = 'ninguna'
+    current_game['options'] = []
+    current_game['status'] = 'esperando'
+    current_game['ronda'] = 1
+
 # --- RUTAS ---
 @app.route('/')
 def index(): return render_template('index.html')
@@ -53,7 +77,7 @@ def handle_join(data):
         'game': current_game,
         'players': players
     }, broadcast=False)
-    emit('actualizar_contador', {'conteo': obtener_estado_apuestas()}, broadcast=True)
+    emitir_estado_global()
 
 @socketio.on('place_bet')
 def handle_bet(data):
@@ -67,30 +91,15 @@ def handle_bet(data):
         players[user]['apuesta_valor'] = monto
         players[user]['opcion'] = opcion
         emit('update_puntos', {'puntos': players[user]['puntos']}, broadcast=False)
-        emit('actualizar_contador', {'conteo': obtener_estado_apuestas()}, broadcast=True)
+        emitir_estado_global()
 
 @socketio.on('admin_change_view')
 def change_view(data):
     current_game['view'] = data['view']
     current_game['options'] = data['options']
-    current_game['status'] = 'apostando' 
+    current_game['status'] = 'apostando'
     emit('new_game', current_game, broadcast=True)
-
-@socketio.on('admin_resolve')
-def resolve(data):
-    ganador = data['ganador']
-    for user, info in players.items():
-        if info['aposto']:
-            if str(info['opcion']) == str(ganador):
-                players[user]['puntos'] += (info['apuesta_valor'] * 2)
-            players[user]['aposto'] = False
-        else:
-            players[user]['puntos'] -= 50
-        
-        if players[user]['puntos'] < 0: players[user]['puntos'] = 0
-            
-    # ESTO ES NECESARIO PARA QUE EL JUGADOR VEA EL RESULTADO
-    emit('round_result', {'ganador': ganador, 'players': players}, broadcast=True)
+    emitir_estado_global()
 
 @socketio.on('admin_next_round')
 def next_round():
@@ -99,8 +108,9 @@ def next_round():
     for user in players:
         players[user]['aposto'] = False
         players[user]['opcion'] = None
+        players[user]['apuesta_valor'] = 0
     emit('new_game', current_game, broadcast=True)
-    emit('actualizar_contador', {'conteo': obtener_estado_apuestas()}, broadcast=True)
+    emitir_estado_global()
 
 @socketio.on('admin_give_money_specific')
 def handle_give_money(data):
@@ -108,22 +118,25 @@ def handle_give_money(data):
     monto = int(data['monto'])
     if name in players:
         players[name]['puntos'] += monto
-        emit('update_puntos', {'puntos': players[name]['puntos']}, broadcast=True)
+        emitir_estado_global()
 
 @socketio.on('admin_give_random')
 def handle_random_money():
     for user in players:
         regalo = random.randint(50, 500)
         players[user]['puntos'] += regalo
-    emit('update_puntos', {'puntos': 0}, broadcast=True) # Actualizar globalmente
+    emitir_estado_global()
 
 @socketio.on('admin_reset_money_only')
 def handle_reset_money():
     for user in players:
         players[user]['puntos'] = 1000
         players[user]['aposto'] = False
-    emit('update_puntos', {'puntos': 1000}, broadcast=True)
-    emit('actualizar_contador', {'conteo': obtener_estado_apuestas()}, broadcast=True)
+        players[user]['apuesta_valor'] = 0
+        players[user]['opcion'] = None
+    reiniciar_ronda()
+    emit('money_reset_done', {'players': players, 'game': current_game}, broadcast=True)
+    emitir_estado_global()
 
 @socketio.on('admin_remove_player')
 def handle_remove_player(data):
@@ -131,13 +144,15 @@ def handle_remove_player(data):
     if name in players:
         del players[name]
         emit('player_kicked', {'target': name}, broadcast=True)
-        emit('actualizar_contador', {'conteo': obtener_estado_apuestas()}, broadcast=True)
+        emitir_estado_global()
 
 @socketio.on('admin_reset_all')
 def handle_reset_all():
     global players
-    players.clear() 
+    players.clear()
+    reiniciar_ronda()
     emit('game_reset_done', broadcast=True)
+    emitir_estado_global()
 # --- EVENTO ADMIN: CAMBIAR VISUAL ---
 @socketio.on('admin_start_round')
 def admin_start_round(data):
@@ -154,7 +169,7 @@ def admin_start_round(data):
         players[name]['opcion'] = None
         
     emit('new_game', current_game, broadcast=True)
-    emit('admin_update', {'players': players}, broadcast=False) # Admin recibe lista
+    emitir_estado_global()
 
 @socketio.on('admin_resolve')
 def resolve(data):
@@ -169,12 +184,13 @@ def resolve(data):
         players[user]['aposto'] = False # Limpiar estado
             
     emit('round_result', {'ganador': ganador, 'players': players}, broadcast=True)
-    emit('admin_update', {'players': players}, broadcast=True) # Admin ve dinero en tiempo real
+    emitir_estado_global()
 
 # Agrega esto para que el admin siempre tenga la lista al día
 @socketio.on('admin_get_players')
 def get_players():
-    emit('admin_update', {'players': players}, broadcast=False)
+    emit('admin_update', {'players': players, 'game': current_game}, broadcast=False)
+    emit('state_update', estado_global(), broadcast=False)
 @socketio.on('admin_refund_bets')
 def refund_bets():
     for name, info in players.items():
@@ -182,6 +198,7 @@ def refund_bets():
             players[name]['puntos'] += info['apuesta_valor']
             players[name]['aposto'] = False
             players[name]['apuesta_valor'] = 0
-    emit('admin_update', {'players': players}, broadcast=True)
+            players[name]['opcion'] = None
+    emitir_estado_global()
 if __name__ == '__main__':
     socketio.run(app, debug=True)

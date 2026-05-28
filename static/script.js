@@ -95,6 +95,43 @@ socket.on('update_data', (data) => {
     }
 });
 
+socket.on('state_update', (data) => {
+    listaGlobalJugadores = data.players || {};
+
+    if (data.game) {
+        document.getElementById('ronda-display').innerText = "RONDA " + data.game.ronda;
+    }
+
+    if (listaGlobalJugadores[miNombre]) {
+        currentPuntos = listaGlobalJugadores[miNombre].puntos;
+        document.getElementById('display-puntos').innerText = "$" + currentPuntos;
+    }
+});
+
+socket.on('money_reset_done', (data) => {
+    listaGlobalJugadores = data.players || {};
+    currentPuntos = listaGlobalJugadores[miNombre] ? listaGlobalJugadores[miNombre].puntos : 1000;
+    document.getElementById('display-puntos').innerText = "$" + currentPuntos;
+    document.getElementById('ronda-display').innerText = "RONDA " + data.game.ronda;
+    document.getElementById('controles-juego').style.display = 'none';
+
+    const msgArea = document.getElementById('mensaje-espera');
+    msgArea.style.display = 'flex';
+    msgArea.innerHTML = "<h2>Dinero reiniciado a $1000</h2><p>Espera a que el host inicie la ronda 1.</p>";
+});
+
+socket.on('game_reset_done', () => {
+    localStorage.removeItem('casino_name');
+    window.location.href = "/";
+});
+
+socket.on('player_kicked', (data) => {
+    if (data.target === miNombre) {
+        localStorage.removeItem('casino_name');
+        window.location.href = "/";
+    }
+});
+
 socket.on('round_result', (data) => {
     // Si el servidor envía mensajes de sistema, no mostramos el resultado de apuesta
     if (["REINICIO DE DINERO", "Actualizando...", "¡Dinero Reiniciado!"].includes(data.ganador)) {

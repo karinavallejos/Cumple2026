@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ranking - Casino Cumpleaños</title>
     <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 </head>
 <body style="background: black; color: white;">
     <div class="header-vegas">
@@ -22,7 +23,7 @@
                     <th style="padding: 15px; text-align: right;">PUNTOS</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="ranking-body">
                 {% for player in ranking %}
                 <tr style="border-bottom: 1px solid #444;">
                     <td style="padding: 12px; font-weight: bold; color: gold;">{{ loop.index }}</td>
@@ -39,5 +40,41 @@
             VOLVER AL JUEGO
         </a>
     </div>
+
+    <script>
+        const socket = io();
+        const rankingBody = document.getElementById('ranking-body');
+
+        function renderRanking(players) {
+            const ordenados = Object.entries(players || {})
+                .sort((a, b) => b[1].puntos - a[1].puntos || a[0].localeCompare(b[0]));
+
+            rankingBody.innerHTML = "";
+
+            if (ordenados.length === 0) {
+                rankingBody.innerHTML = '<tr><td colspan="3" style="padding: 15px;">Sin jugadores registrados</td></tr>';
+                return;
+            }
+
+            ordenados.forEach(([name, info], index) => {
+                const row = document.createElement('tr');
+                row.style.borderBottom = '1px solid #444';
+                row.innerHTML = `
+                    <td style="padding: 12px; font-weight: bold; color: gold;">${index + 1}</td>
+                    <td style="padding: 12px; text-align: left; font-size: 1.1rem;">${name}</td>
+                    <td style="padding: 12px; text-align: right; color: lime; font-weight: bold;">$${info.puntos}</td>
+                `;
+                rankingBody.appendChild(row);
+            });
+        }
+
+        socket.on('ranking_update', (data) => {
+            renderRanking(data.players);
+        });
+
+        socket.on('state_update', (data) => {
+            renderRanking(data.players);
+        });
+    </script>
 </body>
 </html>
