@@ -1,34 +1,50 @@
-// Inicializamos la conexiÃ³n con el servidor
 const socket = io();
 
-// Variables de estado local
 let miNombre = localStorage.getItem('casino_name');
 let currentPuntos = 1000;
 let opcionElegida = null;
 let montoElegido = 0;
 let listaGlobalJugadores = {};
+let apuestaEnviada = false;
 
-// Al conectar
 socket.on('connect', () => {
     if (!miNombre) window.location.href = "/";
     socket.emit('join', { name: miNombre });
 });
 
-function mostrarBancaRota() {
+function setMensaje(html) {
     const msgArea = document.getElementById('mensaje-espera');
+    if (!msgArea) return;
+
+    msgArea.style.display = 'flex';
+    msgArea.style.flexDirection = 'column';
+    msgArea.style.justifyContent = 'center';
+    msgArea.style.alignItems = 'center';
+    msgArea.style.height = '60vh';
+    msgArea.innerHTML = html;
+}
+
+function ocultarControles() {
     const controles = document.getElementById('controles-juego');
     if (controles) controles.style.display = 'none';
-    if (msgArea) {
-        msgArea.style.display = 'flex';
-        msgArea.style.flexDirection = 'column';
-        msgArea.style.justifyContent = 'center';
-        msgArea.style.alignItems = 'center';
-        msgArea.style.height = '60vh';
-        msgArea.innerHTML = `
-            <h1 style="color: #ff4444; font-size: 3rem; text-shadow: 0 0 15px red;">Banca Rota! :c</h1>
-            <p style="color: white; font-size: 1.2rem;">Has perdido todo tu dinero, podrías volver a jugar si te ganas un bono del Host.</p>
-        `;
-    }
+}
+
+function mostrarBancaRota() {
+    ocultarControles();
+    setMensaje(`
+        <h1 style="color: #ff4444; font-size: 3rem; text-shadow: 0 0 15px red;">Banca Rota! :c</h1>
+        <p style="color: white; font-size: 1.2rem;">Has perdido todo tu dinero, podrias volver a jugar si te ganas un bono del Host.</p>
+    `);
+}
+
+function mostrarEsperaHost() {
+    ocultarControles();
+    setMensaje("<h2>Bienvenido!</h2><p>Espera a que el Host inicie las apuestas.</p>");
+}
+
+function mostrarEsperaResultado() {
+    ocultarControles();
+    setMensaje("<h2>Buena suerte!</h2><p>Espera a que el Host de el resultado de la ronda.</p>");
 }
 
 function actualizarMisPuntos(players) {
@@ -45,8 +61,14 @@ function mostrarControlesSiPuedeJugar(game) {
         return;
     }
 
+    if (apuestaEnviada) {
+        mostrarEsperaResultado();
+        return;
+    }
+
     if (game && game.status === "apostando") {
-        document.getElementById('mensaje-espera').style.display = 'none';
+        const msgArea = document.getElementById('mensaje-espera');
+        if (msgArea) msgArea.style.display = 'none';
         document.getElementById('controles-juego').style.display = 'block';
     }
 }
@@ -54,7 +76,8 @@ function mostrarControlesSiPuedeJugar(game) {
 function renderizarBotones(opciones) {
     const contenedor = document.getElementById('contenedor-opciones');
     if (!contenedor) return;
-    contenedor.innerHTML = ''; 
+
+    contenedor.innerHTML = '';
     opciones.forEach(op => {
         const btn = document.createElement('button');
         btn.className = 'opcion-btn';
@@ -62,7 +85,8 @@ function renderizarBotones(opciones) {
         btn.onclick = () => seleccionarOpcion(op, btn);
         contenedor.appendChild(btn);
     });
-    opcionElegida = null; 
+
+    opcionElegida = null;
 }
 
 function seleccionarOpcion(val, elemento) {
@@ -74,7 +98,7 @@ function seleccionarOpcion(val, elemento) {
 function seleccionarPlata(monto, elemento) {
     if (monto === 'ALL') montoElegido = currentPuntos;
     else if (monto !== "") montoElegido = parseInt(monto);
-    
+
     document.querySelectorAll('.apuesta-btn').forEach(b => b.classList.remove('selected-money'));
     if (elemento && elemento.classList.contains('apuesta-btn')) {
         elemento.classList.add('selected-money');
@@ -82,36 +106,35 @@ function seleccionarPlata(monto, elemento) {
 }
 
 function confirmarApuesta() {
-    if (currentPuntos <= 0 && opcionElegida === null) { mostrarBancaRota(); return; }
-    let finalMonto = montoElegido;
-    if (finalMonto <= 0) { alert("Selecciona un monto."); return; }
-    if (finalMonto > currentPuntos) { alert("Â¡No tienes suficiente dinero!"); return; }
-    if (!opcionElegida) { alert("Elige una opciÃ³n primero."); return; }
+    if (currentPuntos <= 0) {
+        mostrarBancaRota();
+        return;
+    }
 
-    if (confirm(`Â¿Confirmar apuesta de $${finalMonto} al ${opcionElegida}?`)) {
+    const finalMonto = montoElegido;
+    if (finalMonto <= 0) { alert("Selecciona un monto."); return; }
+    if (finalMonto > currentPuntos) { alert("No tienes suficiente dinero!"); return; }
+    if (!opcionElegida) { alert("Elige una opcion primero."); return; }
+
+    if (confirm(`Confirmar apuesta de $${finalMonto} al ${opcionElegida}?`)) {
+        apuestaEnviada = true;
         socket.emit('place_bet', { name: miNombre, monto: finalMonto, opcion: opcionElegida });
-        document.getElementById('controles-juego').style.display = 'none';
-        const msg = document.getElementById('mensaje-espera');
-        msg.style.display = 'flex';
-        msg.innerHTML = "âŒ› APUESTA ENVIADA... <br> ESPERANDO AL ADMIN";
+        mostrarEsperaResultado();
     }
 }
 
-// --- ESCUCHADORES DE SOCKETS ---
-
 socket.on('update_data', (data) => {
     currentPuntos = data.puntos;
-    listaGlobalJugadores = data.players || {}; 
+    listaGlobalJugadores = data.players || {};
     document.getElementById('display-puntos').innerText = "$" + currentPuntos;
     document.getElementById('ronda-display').innerText = "RONDA " + data.game.ronda;
-    
+
     if (currentPuntos <= 0) {
         mostrarBancaRota();
-    } else if (data.game.status === "esperando") {
-        document.getElementById('controles-juego').style.display = 'none';
-        const msgArea = document.getElementById('mensaje-espera');
-        msgArea.style.display = 'flex';
-        msgArea.innerHTML = "<h2>Â¡BIENVENIDO! ðŸŽ°</h2><p>Espera a que el host inicie las apuestas...</p>";
+    } else if (data.game.status === "apostando") {
+        mostrarControlesSiPuedeJugar(data.game);
+    } else {
+        mostrarEsperaHost();
     }
 });
 
@@ -122,25 +145,26 @@ socket.on('state_update', (data) => {
         document.getElementById('ronda-display').innerText = "RONDA " + data.game.ronda;
     }
 
-    if (actualizarMisPuntos(listaGlobalJugadores)) {
-        if (currentPuntos <= 0) {
-            mostrarBancaRota();
-        } else {
-            mostrarControlesSiPuedeJugar(data.game);
-        }
+    if (!actualizarMisPuntos(listaGlobalJugadores)) return;
+
+    if (apuestaEnviada) {
+        mostrarEsperaResultado();
+    } else if (currentPuntos <= 0) {
+        mostrarBancaRota();
+    } else if (data.game && data.game.status === "apostando") {
+        mostrarControlesSiPuedeJugar(data.game);
+    } else if (data.game && data.game.status !== "finalizada") {
+        mostrarEsperaHost();
     }
 });
 
 socket.on('money_reset_done', (data) => {
+    apuestaEnviada = false;
     listaGlobalJugadores = data.players || {};
     currentPuntos = listaGlobalJugadores[miNombre] ? listaGlobalJugadores[miNombre].puntos : 1000;
     document.getElementById('display-puntos').innerText = "$" + currentPuntos;
     document.getElementById('ronda-display').innerText = "RONDA " + data.game.ronda;
-    document.getElementById('controles-juego').style.display = 'none';
-
-    const msgArea = document.getElementById('mensaje-espera');
-    msgArea.style.display = 'flex';
-    msgArea.innerHTML = "<h2>Dinero reiniciado a $1000</h2><p>Espera a que el host inicie la ronda 1.</p>";
+    mostrarEsperaHost();
 });
 
 socket.on('game_reset_done', () => {
@@ -156,17 +180,38 @@ socket.on('player_kicked', (data) => {
 });
 
 socket.on('round_result', (data) => {
-    // Si el servidor envÃ­a mensajes de sistema, no mostramos el resultado de apuesta
-    if (["REINICIO DE DINERO", "Actualizando...", "Â¡Dinero Reiniciado!"].includes(data.ganador)) {
-        if (data.players[miNombre]) {
-            currentPuntos = data.players[miNombre].puntos;
-            document.getElementById('display-puntos').innerText = "$" + currentPuntos;
-        }
+    listaGlobalJugadores = data.players || {};
+    actualizarMisPuntos(listaGlobalJugadores);
+    apuestaEnviada = false;
+
+    if (currentPuntos <= 0) {
+        mostrarBancaRota();
         return;
     }
 
-    listaGlobalJugadores = data.players;
-    actualizarMisPuntos(data.players);
+    ocultarControles();
+
+    const gano = opcionElegida !== null && String(opcionElegida) === String(data.ganador);
+    const resultadoHTML = gano
+        ? "<h1 style='color: lime; font-size: 2.5rem;'>Ganaste!</h1>"
+        : (opcionElegida !== null
+            ? "<h1 style='color: red; font-size: 2.5rem;'>Perdiste!</h1>"
+            : "<h1 style='color: #ffa500; font-size: 2rem;'>Pierdes $50 por no apostar</h1>");
+
+    setMensaje(`
+        <div style="text-align: center;">
+            ${resultadoHTML}
+            <div style="margin-top: 30px; border-top: 2px solid gold; padding-top: 20px;">
+                <h2 style="color: gold; font-size: 1.5rem;">Ronda terminada</h2>
+                <p style="color: white; font-size: 1.2rem;">Espera a que el Host inicie la siguiente ronda.</p>
+            </div>
+        </div>
+    `);
+});
+
+socket.on('new_game', (game) => {
+    apuestaEnviada = false;
+    document.getElementById('ronda-display').innerText = "RONDA " + game.ronda;
 
     if (currentPuntos <= 0) {
         mostrarBancaRota();
@@ -174,42 +219,9 @@ socket.on('round_result', (data) => {
     }
 
     const msgArea = document.getElementById('mensaje-espera');
-    
-    document.getElementById('controles-juego').style.display = 'none'; 
-    msgArea.style.display = 'flex'; 
-    msgArea.style.flexDirection = 'column';
-    msgArea.style.justifyContent = 'center';
-    msgArea.style.alignItems = 'center';
-    msgArea.style.height = '60vh';
-
-    let resultadoHTML = (opcionElegida !== null && String(opcionElegida) === String(data.ganador)) 
-        ? "<h1 style='color: lime; font-size: 2.5rem;'>Â¡GANASTE! ðŸŽ‰</h1>" 
-        : (opcionElegida !== null ? "<h1 style='color: red; font-size: 2.5rem;'>MÃS SUERTE... ðŸ’€</h1>" : "<h1 style='color: #ffa500; font-size: 2rem;'>PIERDE $50 POR NO APOSTAR ðŸ’¸</h1>");
-
-    msgArea.innerHTML = `
-        <div style="text-align: center;">
-            ${resultadoHTML}
-            <div style="margin-top: 30px; border-top: 2px solid gold; padding-top: 20px;">
-                <h2 style="color: gold; font-size: 1.5rem;">RONDA TERMINADA</h2>
-                <p style="color: white; font-size: 1.2rem;">Espera a que el host inicie la siguiente... ðŸ€</p>
-            </div>
-        </div>
-    `;
-
-    actualizarMisPuntos(data.players);
-});
-
-socket.on('new_game', (game) => {
-    if (currentPuntos <= 0) {
-        document.getElementById('ronda-display').innerText = "RONDA " + game.ronda;
-        mostrarBancaRota();
-        return;
-    }
-
-    document.getElementById('mensaje-espera').style.display = 'none';
+    if (msgArea) msgArea.style.display = 'none';
     document.getElementById('controles-juego').style.display = 'block';
-    document.getElementById('ronda-display').innerText = "RONDA " + game.ronda;
-    
+
     renderizarBotones(game.options);
     opcionElegida = null;
     montoElegido = 0;
@@ -219,7 +231,9 @@ socket.on('update_puntos', (data) => {
     currentPuntos = data.puntos;
     document.getElementById('display-puntos').innerText = "$" + currentPuntos;
 
-    if (currentPuntos <= 0) {
+    if (apuestaEnviada) {
+        mostrarEsperaResultado();
+    } else if (currentPuntos <= 0) {
         mostrarBancaRota();
     }
 });
