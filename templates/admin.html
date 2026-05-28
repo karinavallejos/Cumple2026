@@ -13,6 +13,7 @@
         button { padding: 12px; cursor: pointer; background: gold; border: none; font-weight: bold; border-radius: 5px; margin: 5px; }
         button:disabled { opacity: 0.45; cursor: not-allowed; }
         button.active-visual { outline: 3px solid #00ff00; box-shadow: 0 0 12px #00ff00; }
+        .btn-confirm-visual { background: #00cc66; color: white; }
         .btn-resolve { background: #00ff00; width: 100%; margin-top: 10px; }
         .btn-next { background: #0088ff; color: white; width: 100%; margin-top: 10px; }
         .btn-reset-money { background: #ffcc00; color: black; width: 100%; margin-top: 10px; }
@@ -40,6 +41,7 @@
         <button type="button" data-visual="dados" onclick="cambiarVisual('dados', ['1','2','3','4','5','6'])">DADOS</button>
         <button type="button" data-visual="cartas" onclick="cambiarVisual('cartas', ['\u2665','\u2666','\u2663','\u2660'])">CARTAS</button>
         <button type="button" data-visual="especial" onclick="cambiarVisual('especial', ['ROJO','NEGRO'])">COLORES</button>
+        <button type="button" class="btn-confirm-visual" onclick="confirmarVisual()">CONFIRMAR VISUAL</button>
         <div id="visual-actual">Visual actual: sin seleccionar</div>
     </div>
 
@@ -69,6 +71,7 @@
         const socket = io();
         let gameStatus = "esperando";
         let gameRound = 1;
+        let visualPendiente = null;
 
         const estadoTexto = {
             esperando: "Esperando que inicies la ronda",
@@ -111,9 +114,10 @@
         function actualizarEstadoJuego(game) {
             gameStatus = game.status || "esperando";
             gameRound = game.ronda || 1;
+            if (gameStatus !== "preparando") visualPendiente = null;
             document.getElementById('ronda-actual').innerText = `Ronda ${gameRound}`;
             document.getElementById('estado-ronda').innerText = estadoTexto[gameStatus] || gameStatus;
-            marcarVisualActiva(game.view);
+            marcarVisualActiva(visualPendiente ? visualPendiente.view : game.view);
             renderizarBotonesResolucion(game.options || []);
             actualizarControlesRonda();
         }
@@ -133,6 +137,7 @@
 
             document.querySelector('.btn-resolve').disabled = !puedeResolver;
             document.querySelector('.btn-next').disabled = !puedeIniciar;
+            document.querySelector('.btn-confirm-visual').disabled = !puedeElegirVisual || !visualPendiente;
         }
 
         function actualizarLista(players) {
@@ -190,9 +195,24 @@
                 return;
             }
 
-            socket.emit('admin_change_view', { view, options });
+            visualPendiente = { view, options };
             marcarVisualActiva(view);
-            renderizarBotonesResolucion(options);
+            document.getElementById('visual-actual').innerText = `Visual a confirmar: ${view.toUpperCase()}`;
+            actualizarControlesRonda();
+        }
+
+        function confirmarVisual() {
+            if (gameStatus !== "preparando") {
+                alert("Primero inicia una ronda nueva.");
+                return;
+            }
+
+            if (!visualPendiente) {
+                alert("Selecciona una visual antes de confirmar.");
+                return;
+            }
+
+            socket.emit('admin_change_view', visualPendiente);
         }
 
         function resolver() {
@@ -213,6 +233,7 @@
             }
 
             socket.emit('admin_next_round');
+            visualPendiente = null;
         }
 
         function darDineroEspecifico() {
