@@ -23,6 +23,7 @@
         #ronda-actual { font-size: 2rem; font-weight: bold; color: gold; text-align: center; margin-top: 8px; }
         #estado-ronda { color: #ffcc00; text-align: center; margin-top: 8px; }
         #visual-actual { margin-top: 10px; color: #00ff00; font-weight: bold; }
+        #rapido-dulces { display: none; margin-top: 12px; padding: 12px; border: 1px solid #00cc66; border-radius: 8px; background: #102418; color: white; text-align: center; font-weight: bold; }
         .winner-btn { width: 60px; height: 60px; font-size: 1.5rem; border: 2px solid transparent; }
     </style>
 </head>
@@ -50,6 +51,7 @@
         <h3>2. Resolver Ronda</h3>
         <div id="botones-resolucion" style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;"></div>
         <input type="text" id="resultadoGanador" readonly style="width: 90%; text-align: center; margin-top: 10px;">
+        <div id="rapido-dulces"></div>
         <button type="button" onclick="resolver()" class="btn-resolve">PAGAR Y FINALIZAR RONDA</button>
         <button type="button" onclick="siguienteRonda()" class="btn-next">INICIAR SIGUIENTE RONDA</button>
     </div>
@@ -72,6 +74,7 @@
         const socket = io();
         let gameStatus = "esperando";
         let gameRound = 1;
+        let currentView = "ninguna";
         let visualPendiente = null;
 
         const estadoTexto = {
@@ -91,6 +94,7 @@
 
         socket.on('round_result', (data) => {
             actualizarLista(data.players);
+            mostrarRapidoDulces(data.ganador_rapido_dulces);
         });
 
         socket.on('update_data', (data) => {
@@ -115,7 +119,9 @@
         function actualizarEstadoJuego(game) {
             gameStatus = game.status || "esperando";
             gameRound = game.ronda || 1;
+            currentView = game.view || "ninguna";
             if (gameStatus !== "preparando") visualPendiente = null;
+            if (gameStatus !== "finalizada") limpiarRapidoDulces();
             document.getElementById('ronda-actual').innerText = `Ronda ${gameRound}`;
             document.getElementById('estado-ronda').innerText = estadoTexto[gameStatus] || gameStatus;
             marcarVisualActiva(visualPendiente ? visualPendiente.view : game.view);
@@ -235,6 +241,25 @@
 
             socket.emit('admin_next_round');
             visualPendiente = null;
+            limpiarRapidoDulces();
+        }
+
+        function mostrarRapidoDulces(nombre) {
+            const contenedor = document.getElementById('rapido-dulces');
+            if (!contenedor || currentView !== "dulces") return;
+
+            contenedor.style.display = 'block';
+            contenedor.innerText = nombre
+                ? `DULCES: respuesta ganadora mas rapida: ${nombre}`
+                : "DULCES: nadie acerto la respuesta ganadora.";
+        }
+
+        function limpiarRapidoDulces() {
+            const contenedor = document.getElementById('rapido-dulces');
+            if (!contenedor) return;
+
+            contenedor.style.display = 'none';
+            contenedor.innerText = "";
         }
 
         function darDineroEspecifico() {
