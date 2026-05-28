@@ -16,6 +16,15 @@ const colorStyles = {
     AMARILLO: { background: "#ffd400", color: "#ffd400", border: "#fff2a0" }
 };
 
+const rouletteColorCenters = {
+    ROJO: 30,
+    NEGRO: 90,
+    VERDE: 150,
+    AZUL: 210,
+    BLANCO: 270,
+    AMARILLO: 330
+};
+
 socket.on('connect', () => {
     if (!miNombre) window.location.href = "/";
     socket.emit('join', { name: miNombre });
@@ -107,6 +116,12 @@ function aplicarEstiloColor(btn, color) {
     btn.style.background = estilo.background;
     btn.style.color = estilo.color;
     btn.style.borderColor = estilo.border;
+    btn.style.width = '100%';
+    btn.style.height = '74px';
+    btn.style.padding = '0';
+    btn.style.boxSizing = 'border-box';
+    btn.style.textShadow = 'none';
+    btn.style.overflow = 'hidden';
 }
 
 function seleccionarOpcion(val, elemento) {
@@ -271,22 +286,35 @@ function mostrarRuleta(data) {
     const resultado = document.getElementById('ruleta-resultado');
     if (!modal || !wheel || !resultado) return;
 
+    const duration = data.duration || 4500;
     modal.style.display = 'flex';
     resultado.innerText = 'Girando...';
-    wheel.classList.remove('spinning');
-    void wheel.offsetWidth;
-    wheel.classList.add('spinning');
+    animarRuleta(wheel, data.ganador, duration);
 
     setTimeout(() => {
         resultado.innerText = 'Color ganador: ' + data.ganador;
-    }, data.duration || 4500);
+    }, duration);
 }
 
 function ocultarRuleta() {
     const modal = document.getElementById('modal-ruleta');
     const wheel = document.getElementById('ruleta-wheel');
     if (modal) modal.style.display = 'none';
-    if (wheel) wheel.classList.remove('spinning');
+    if (wheel) {
+        wheel.style.transition = 'none';
+        wheel.style.transform = 'rotate(0deg)';
+    }
+}
+
+function animarRuleta(wheel, ganador, duration) {
+    const center = rouletteColorCenters[ganador] || rouletteColorCenters.AMARILLO;
+    const finalRotation = 1800 + ((360 - center) % 360);
+
+    wheel.style.transition = 'none';
+    wheel.style.transform = 'rotate(0deg)';
+    void wheel.offsetWidth;
+    wheel.style.transition = `transform ${duration}ms cubic-bezier(.12,.72,.2,1)`;
+    wheel.style.transform = `rotate(${finalRotation}deg)`;
 }
 
 function asegurarModalRuleta() {
@@ -322,10 +350,6 @@ function asegurarModalRuleta() {
                 background: conic-gradient(#d71920 0deg 60deg, #050505 60deg 120deg, #00a651 120deg 180deg, #0077ff 180deg 240deg, #ffffff 240deg 300deg, #ffd400 300deg 360deg);
             }
 
-            .ruleta-wheel.spinning {
-                animation: spinRoulette 4.5s cubic-bezier(.12,.72,.2,1) forwards;
-            }
-
             .ruleta-pointer {
                 width: 0;
                 height: 0;
@@ -341,11 +365,6 @@ function asegurarModalRuleta() {
                 font-size: 1.5rem;
                 font-weight: bold;
                 text-transform: uppercase;
-            }
-
-            @keyframes spinRoulette {
-                from { transform: rotate(0deg); }
-                to { transform: rotate(1840deg); }
             }
         `;
         document.head.appendChild(styles);
