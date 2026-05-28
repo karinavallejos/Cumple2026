@@ -1,11 +1,25 @@
 const socket = io();
 
 let miNombre = localStorage.getItem('casino_name');
+let miMesa = localStorage.getItem('casino_table');
 let currentPuntos = 1000;
 let opcionElegida = null;
 let montoElegido = 0;
 let listaGlobalJugadores = {};
 let apuestaEnviada = false;
+let buzzerState = null;
+let yaToqueChicharra = false;
+
+const playerNames = [
+    'Admin', 'Alexander', 'Ali', 'Angela', 'Arturo', 'Belen', 'Benny', 'Carla C.', 'Carla P.', 'Cata',
+    'Coni', 'Cote', 'Cristian', 'Damian', 'Daniela', 'David', 'Dayanne', 'Diego', 'Eduardo', 'Francisco',
+    'George', 'Heriberto', 'Ignacio', 'Ines', 'Isidora', 'Javi', 'Jorge', 'Karina', 'Katty', 'Loreto A.',
+    'Loreto M.', 'Macarena', 'Manuel', 'Marianela', 'Matias F.', 'Matias B.', 'Maxi P.', 'Max C.',
+    'Michelle', 'Mike', 'Pame', 'Paulina', 'Paulina G.', 'Peyo', 'Pedro V.', 'Pipe', 'Poly', 'Tamara',
+    'Tati', 'Tito G.', 'Tito S.'
+];
+
+const buzzerTables = ['Elvis', 'Circus', 'Bellagio', 'All in', 'Flamingo', 'Jackpot', 'Luxor'];
 
 const colorStyles = {
     ROJO: { background: "#d71920", color: "#d71920", border: "#ffb3b3" },
@@ -26,8 +40,12 @@ const rouletteColorCenters = {
 };
 
 socket.on('connect', () => {
-    if (!miNombre) window.location.href = "/";
-    socket.emit('join', { name: miNombre });
+    prepararSelectoresChicharra();
+    if (miNombre) {
+        socket.emit('join', { name: miNombre });
+    } else {
+        socket.emit('get_state');
+    }
 });
 
 function setMensaje(html) {
@@ -38,7 +56,8 @@ function setMensaje(html) {
     msgArea.style.flexDirection = 'column';
     msgArea.style.justifyContent = 'center';
     msgArea.style.alignItems = 'center';
-    msgArea.style.height = '60vh';
+    msgArea.style.minHeight = '30vh';
+    msgArea.style.height = 'auto';
     msgArea.innerHTML = html;
 }
 
@@ -164,6 +183,11 @@ function confirmarApuesta() {
 }
 
 socket.on('update_data', (data) => {
+    if (data.buzzer && data.buzzer.active) {
+        mostrarChicharra(data.buzzer);
+        return;
+    }
+
     currentPuntos = data.puntos;
     listaGlobalJugadores = data.players || {};
     document.getElementById('display-puntos').innerText = "$" + currentPuntos;
@@ -179,6 +203,17 @@ socket.on('update_data', (data) => {
 });
 
 socket.on('state_update', (data) => {
+    if (data.buzzer && data.buzzer.active) {
+        mostrarChicharra(data.buzzer);
+        return;
+    }
+
+    ocultarChicharra();
+    if (!miNombre) {
+        window.location.href = "/";
+        return;
+    }
+
     listaGlobalJugadores = data.players || {};
 
     if (data.game) {
@@ -208,6 +243,7 @@ socket.on('money_reset_done', (data) => {
 });
 
 socket.on('game_reset_done', () => {
+    localStorage.removeItem('casino_table');
     localStorage.removeItem('casino_name');
     window.location.href = "/";
 });
@@ -252,6 +288,27 @@ socket.on('round_result', (data) => {
 
 socket.on('roulette_spin', (data) => {
     mostrarRuleta(data);
+});
+
+socket.on('buzzer_state', (data) => {
+    if (data && data.active) {
+        mostrarChicharra(data);
+    } else {
+        ocultarChicharra();
+        if (!miNombre) window.location.href = "/";
+    }
+});
+
+socket.on('buzzer_joined', (data) => {
+    miNombre = data.name;
+    miMesa = data.table;
+    localStorage.setItem('casino_name', miNombre);
+    localStorage.setItem('casino_table', miMesa);
+    mostrarChicharra(buzzerState);
+});
+
+socket.on('buzzer_error', (data) => {
+    alert(data.message || 'Revisa tu nombre y mesa.');
 });
 
 socket.on('new_game', (game) => {
@@ -385,4 +442,136 @@ function asegurarModalRuleta() {
         `;
         document.body.appendChild(modal);
     }
+}
+
+function prepararSelectoresChicharra() {
+    const nombreSelect = document.getElementById('chicharra-nombre');
+    const mesaSelect = document.getElementById('chicharra-mesa');
+    if (!nombreSelect || !mesaSelect || nombreSelect.dataset.ready === '1') return;
+
+    nombreSelect.innerHTML = '<option value="">Selecciona tu nombre...</option>';
+    playerNames.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.innerText = name;
+        nombreSelect.appendChild(opt);
+    });
+
+    mesaSelect.innerHTML = '<option value="">Selecciona tu mesa...</option>';
+    buzzerTables.forEach(table => {
+        const opt = document.createElement('option');
+        opt.value = table;
+        opt.innerText = table;
+        mesaSelect.appendChild(opt);
+    });
+
+    if (miNombre) nombreSelect.value = miNombre;
+    if (miMesa) mesaSelect.value = miMesa;
+    nombreSelect.dataset.ready = '1';
+}
+
+function mostrarChicharra(data) {
+    if (!data) return;
+    buzzerState = data;
+    prepararSelectoresChicharra();
+
+    ['casino-header', 'casino-main', 'casino-footer'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+
+    const panel = document.getElementById('chicharra-panel');
+    if (panel) panel.style.display = 'block';
+
+    const registro = document.getElementById('chicharra-registro');
+    const juego = document.getElementById('chicharra-juego');
+    const mesaRegistrada = miNombre && miMesa;
+
+    if (registro) registro.style.display = mesaRegistrada ? 'none' : 'block';
+    if (juego) juego.style.display = mesaRegistrada ? 'block' : 'none';
+
+    if (!mesaRegistrada) return;
+
+    const yaEstoy = (data.buzzes || []).some(item => item.name === miNombre);
+    yaToqueChicharra = yaEstoy;
+
+    document.getElementById('chicharra-cancion').innerText = `Cancion ${data.song || 0}`;
+    document.getElementById('chicharra-mesa-actual').innerText = `${miNombre} - Mesa ${miMesa}`;
+    const btn = document.getElementById('btn-chicharra');
+    btn.disabled = !data.enabled || yaEstoy;
+    btn.innerText = yaEstoy ? 'LISTO' : 'CHICHARRA';
+    document.getElementById('chicharra-estado').innerText = data.enabled
+        ? (yaEstoy ? 'Tu turno quedo registrado.' : 'Chicharra habilitada')
+        : 'Espera a que el Host habilite la siguiente cancion.';
+
+    renderizarOrdenChicharra(data);
+    renderizarPuntosMesas(data);
+}
+
+function ocultarChicharra() {
+    const panel = document.getElementById('chicharra-panel');
+    if (panel) panel.style.display = 'none';
+
+    ['casino-header', 'casino-main', 'casino-footer'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = '';
+    });
+}
+
+function registrarChicharra() {
+    const nombre = document.getElementById('chicharra-nombre').value;
+    const mesa = document.getElementById('chicharra-mesa').value;
+    if (!nombre || !mesa) {
+        alert('Selecciona tu nombre y mesa.');
+        return;
+    }
+
+    miNombre = nombre;
+    miMesa = mesa;
+    localStorage.setItem('casino_name', miNombre);
+    localStorage.setItem('casino_table', miMesa);
+    socket.emit('join', { name: miNombre });
+    socket.emit('player_join_buzzer', { name: miNombre, table: miMesa });
+}
+
+function tocarChicharra() {
+    if (!miNombre || !miMesa || yaToqueChicharra) return;
+    yaToqueChicharra = true;
+    socket.emit('player_buzz', { name: miNombre, table: miMesa });
+}
+
+function renderizarOrdenChicharra(data) {
+    const contenedor = document.getElementById('chicharra-orden');
+    if (!contenedor) return;
+    contenedor.innerHTML = '';
+
+    const primeros = (data.buzzes || []).slice(0, 15);
+    if (primeros.length === 0) {
+        contenedor.innerHTML = '<div><span>Sin respuestas todavia</span><span></span></div>';
+        return;
+    }
+
+    primeros.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.innerHTML = `<span>${index + 1}. ${item.name} - ${item.table}</span><span>${item.elapsed}s</span>`;
+        contenedor.appendChild(row);
+    });
+}
+
+function renderizarPuntosMesas(data) {
+    const contenedor = document.getElementById('puntos-mesas');
+    if (!contenedor) return;
+    contenedor.innerHTML = '';
+
+    buzzerTables.forEach(table => {
+        const row = document.createElement('div');
+        row.innerHTML = `<span>${table}</span><strong>${(data.tables || {})[table] || 0}</strong>`;
+        contenedor.appendChild(row);
+    });
+}
+
+function togglePuntosMesas() {
+    const panel = document.getElementById('puntos-mesas');
+    if (!panel) return;
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
 }
