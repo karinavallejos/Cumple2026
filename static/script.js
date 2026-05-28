@@ -140,6 +140,11 @@ function seleccionarPlata(monto, elemento) {
     }
 }
 
+function reiniciarSeleccionApuesta() {
+    montoElegido = 0;
+    document.querySelectorAll('.apuesta-btn').forEach(b => b.classList.remove('selected-money'));
+}
+
 function confirmarApuesta() {
     if (currentPuntos <= 0) {
         mostrarBancaRota();
@@ -264,7 +269,7 @@ socket.on('new_game', (game) => {
 
     renderizarBotones(game.options);
     opcionElegida = null;
-    montoElegido = 0;
+    reiniciarSeleccionApuesta();
 });
 
 socket.on('update_puntos', (data) => {
@@ -286,14 +291,13 @@ function mostrarRuleta(data) {
     const resultado = document.getElementById('ruleta-resultado');
     if (!modal || !wheel || !resultado) return;
 
-    const duration = data.duration || 4500;
     modal.style.display = 'flex';
     resultado.innerText = 'Girando...';
-    animarRuleta(wheel, data.ganador, duration);
+    animarRuleta(wheel, data.ganador, data.duration || 4500);
 
     setTimeout(() => {
         resultado.innerText = 'Color ganador: ' + data.ganador;
-    }, duration);
+    }, data.duration || 4500);
 }
 
 function ocultarRuleta() {
