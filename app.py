@@ -49,6 +49,13 @@ def reiniciar_ronda():
     current_game['status'] = 'esperando'
     current_game['ronda'] = 1
 
+def puntos_iniciales_jugador():
+    if current_game['status'] == 'esperando' and current_game['ronda'] == 1:
+        return 1000
+
+    descuento = current_game['ronda'] * 50
+    return max(0, 1000 - descuento)
+
 def preparar_siguiente_ronda():
     if current_game['status'] == 'apostando':
         return False
@@ -88,7 +95,7 @@ def handle_join(data):
     name = data.get('name')
     if not name: return
     if name not in players:
-        players[name] = {'puntos': 1000, 'aposto': False, 'apuesta_valor': 0, 'opcion': None}
+        players[name] = {'puntos': puntos_iniciales_jugador(), 'aposto': False, 'apuesta_valor': 0, 'opcion': None}
     
     emit('update_data', {
         'puntos': players[name]['puntos'], 
