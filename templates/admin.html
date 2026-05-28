@@ -11,42 +11,45 @@
         .control-group { border: 1px solid gold; padding: 15px; margin-bottom: 20px; border-radius: 10px; background: #262626; }
         h3 { margin-top: 0; color: #ffcc00; }
         button { padding: 12px; cursor: pointer; background: gold; border: none; font-weight: bold; border-radius: 5px; margin: 5px; }
+        button.active-visual { outline: 3px solid #00ff00; box-shadow: 0 0 12px #00ff00; }
         .btn-resolve { background: #00ff00; width: 100%; margin-top: 10px; }
         .btn-next { background: #0088ff; color: white; width: 100%; margin-top: 10px; }
         input, select { padding: 10px; border-radius: 5px; background: #333; color: white; border: 1px solid gold; }
         #contador-apuestas { font-size: 3rem; font-weight: bold; color: #00ffff; text-align: center; }
+        #visual-actual { margin-top: 10px; color: #00ff00; font-weight: bold; }
         .winner-btn { width: 60px; height: 60px; font-size: 1.5rem; border: 2px solid transparent; }
     </style>
 </head>
 <body>
-    <h1>🎰 PANEL DE CONTROL</h1>
+    <h1>Panel de Control</h1>
 
     <div class="control-group">
-        <h3>📊 Estado: Apuestas Confirmadas</h3>
+        <h3>Estado: Apuestas Confirmadas</h3>
         <div id="contador-apuestas">0/0</div>
     </div>
 
     <div class="control-group">
         <h3>1. Cambiar Visual</h3>
-        <button onclick="cambiarVisual('dados', ['1','2','3','4','5','6'])">🎲 DADOS</button>
-        <button onclick="cambiarVisual('cartas', ['❤️','💎','🍀','♠️'])">🃏 CARTAS</button>
-        <button onclick="cambiarVisual('especial', ['ROJO','NEGRO'])">🔴 COLORES</button>
+        <button type="button" data-visual="dados" onclick="cambiarVisual('dados', ['1','2','3','4','5','6'])">DADOS</button>
+        <button type="button" data-visual="cartas" onclick="cambiarVisual('cartas', ['\u2665','\u2666','\u2663','\u2660'])">CARTAS</button>
+        <button type="button" data-visual="especial" onclick="cambiarVisual('especial', ['ROJO','NEGRO'])">COLORES</button>
+        <div id="visual-actual">Visual actual: sin seleccionar</div>
     </div>
 
     <div class="control-group">
         <h3>2. Resolver Ronda</h3>
-        <div id="botones-resolucion" style="display:flex; justify-content:center; gap:10px;"></div>
+        <div id="botones-resolucion" style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;"></div>
         <input type="text" id="resultadoGanador" readonly style="width: 90%; text-align: center; margin-top: 10px;">
-        <button onclick="resolver()" class="btn-resolve">💵 PAGAR Y FINALIZAR RONDA</button>
-        <button onclick="siguienteRonda()" class="btn-next">▶ INICIAR SIGUIENTE RONDA</button>
+        <button type="button" onclick="resolver()" class="btn-resolve">PAGAR Y FINALIZAR RONDA</button>
+        <button type="button" onclick="siguienteRonda()" class="btn-next">INICIAR SIGUIENTE RONDA</button>
     </div>
 
     <div class="control-group">
-        <h3>👥 Jugadores</h3>
+        <h3>Jugadores</h3>
         <ul id="lista-admin-jugadores"></ul>
         <select id="select-jugadores"></select>
         <input type="number" id="monto-regalo" placeholder="$">
-        <button onclick="darDineroEspecifico()">DAR BONO</button>
+        <button type="button" onclick="darDineroEspecifico()">DAR BONO</button>
     </div>
 
     <script>
@@ -57,20 +60,8 @@
         });
 
         socket.on('new_game', (data) => {
-            const contenedor = document.getElementById('botones-resolucion');
-            contenedor.innerHTML = "";
-            document.getElementById('resultadoGanador').value = "";
-            data.options.forEach(opt => {
-                const btn = document.createElement('button');
-                btn.className = "winner-btn";
-                btn.innerText = opt;
-                btn.onclick = () => {
-                    document.getElementById('resultadoGanador').value = opt;
-                    document.querySelectorAll('.winner-btn').forEach(b => b.style.border = "2px solid transparent");
-                    btn.style.border = "4px solid #00ff00";
-                };
-                contenedor.appendChild(btn);
-            });
+            marcarVisualActiva(data.view);
+            renderizarBotonesResolucion(data.options);
         });
 
         socket.on('round_result', (data) => {
@@ -81,57 +72,81 @@
             actualizarLista(data.players);
         });
 
+        socket.on('admin_update', (data) => {
+            actualizarLista(data.players);
+        });
+
         function actualizarLista(players) {
             const lista = document.getElementById('lista-admin-jugadores');
             const select = document.getElementById('select-jugadores');
             lista.innerHTML = "";
             select.innerHTML = '<option value="">Seleccionar...</option>';
+
             Object.keys(players).forEach(name => {
+                const jugador = players[name];
+                const estado = jugador.aposto ? ' listo' : ' esperando';
+
                 const li = document.createElement('li');
-                li.innerText = `${name}: $${players[name].puntos}`;
+                li.innerText = `${name}: $${jugador.puntos} (${estado})`;
                 lista.appendChild(li);
+
                 const opt = document.createElement('option');
-                opt.value = name; opt.innerText = name;
+                opt.value = name;
+                opt.innerText = name;
                 select.appendChild(opt);
             });
         }
 
-        function cambiarVisual(t, o) { socket.emit('admin_change_view', { view: t, options: o }); }
-        
+        function renderizarBotonesResolucion(options) {
+            const contenedor = document.getElementById('botones-resolucion');
+            contenedor.innerHTML = "";
+            document.getElementById('resultadoGanador').value = "";
+
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.type = "button";
+                btn.className = "winner-btn";
+                btn.innerText = opt;
+                btn.onclick = () => {
+                    document.getElementById('resultadoGanador').value = opt;
+                    document.querySelectorAll('.winner-btn').forEach(b => b.style.border = "2px solid transparent");
+                    btn.style.border = "4px solid #00ff00";
+                };
+                contenedor.appendChild(btn);
+            });
+        }
+
+        function marcarVisualActiva(view) {
+            document.querySelectorAll('[data-visual]').forEach(btn => {
+                btn.classList.toggle('active-visual', btn.dataset.visual === view);
+            });
+            const texto = view ? view.toUpperCase() : 'sin seleccionar';
+            document.getElementById('visual-actual').innerText = `Visual actual: ${texto}`;
+        }
+
+        function cambiarVisual(view, options) {
+            socket.emit('admin_change_view', { view, options });
+            marcarVisualActiva(view);
+            renderizarBotonesResolucion(options);
+        }
+
         function resolver() {
             const res = document.getElementById('resultadoGanador').value;
-            if(res) socket.emit('admin_resolve', { ganador: res });
+            if (res) socket.emit('admin_resolve', { ganador: res });
             else alert("Selecciona un ganador");
         }
 
-        function siguienteRonda() { socket.emit('admin_next_round'); }
-        <script>
-    const socket = io();
-    
-    // Al cargar, pedimos la lista
-    socket.emit('admin_get_players');
+        function siguienteRonda() {
+            socket.emit('admin_next_round');
+        }
 
-    // Escucha cambios en tiempo real (alguien se une, alguien apuesta, o ronda resuelta)
-    socket.on('admin_update', (data) => {
-        const lista = document.getElementById('lista-admin-jugadores');
-        lista.innerHTML = "";
-        Object.keys(data.players).forEach(name => {
-            const p = data.players[name];
-            lista.innerHTML += `<li>${name}: $${p.puntos} ${p.aposto ? '✅' : '⏳'}</li>`;
-        });
-    });
-
-    function iniciarRonda() {
-        const view = document.getElementById('select-visual').value;
-        const ops = document.getElementById('input-ops').value.split(',');
-        socket.emit('admin_start_round', { view: view, options: ops });
-    }
-</script>
         function darDineroEspecifico() {
             const n = document.getElementById('select-jugadores').value;
             const m = document.getElementById('monto-regalo').value;
-            if(n && m) socket.emit('admin_give_money_specific', { name: n, monto: m });
+            if (n && m) socket.emit('admin_give_money_specific', { name: n, monto: m });
         }
+
+        socket.emit('admin_get_players');
     </script>
 </body>
 </html>
