@@ -43,7 +43,7 @@
         <h3>1. Elegir Visual</h3>
         <button type="button" data-visual="dados" onclick="cambiarVisual('dados', ['1','2','3','4','5','6'])">DADOS</button>
         <button type="button" data-visual="cartas" onclick="cambiarVisual('cartas', ['\u2665','\u2666','\u2663','\u2660'])">CARTAS</button>
-        <button type="button" data-visual="especial" onclick="cambiarVisual('especial', ['ROJO','NEGRO','VERDE','AZUL','BLANCO','AMARILLO'])">COLORES</button>
+        <button type="button" data-visual="especial" onclick="cambiarVisual('especial', ['ROJO','NEGRO','VERDE','AZUL','BLANCO','AMARILLO'])">RULETA</button>
         <button type="button" data-visual="dulces" onclick="cambiarVisual('dulces', ['35','36','37','38','39','40','41','42'])">DULCES</button>
         <button type="button" class="btn-confirm-visual" onclick="confirmarVisual()">CONFIRMAR VISUAL</button>
         <div id="visual-actual">Visual actual: sin seleccionar</div>
@@ -150,7 +150,7 @@
             const puedeElegirVisual = gameStatus === "preparando";
             const puedeResolver = gameStatus === "apostando";
             const puedeIniciar = gameStatus === "esperando" || gameStatus === "finalizada";
-            const esColores = currentView === "especial";
+            const esRuleta = currentView === "especial";
 
             document.querySelectorAll('[data-visual]').forEach(btn => {
                 btn.disabled = !puedeElegirVisual;
@@ -160,11 +160,11 @@
                 btn.disabled = !puedeResolver;
             });
 
-            document.querySelector('.btn-resolve').disabled = !puedeResolver || esColores;
+            document.querySelector('.btn-resolve').disabled = !puedeResolver || esRuleta;
             document.querySelector('.btn-next').disabled = !puedeIniciar;
             document.querySelector('.btn-confirm-visual').disabled = !puedeElegirVisual || !visualPendiente;
-            document.querySelector('.btn-roulette').style.display = esColores ? 'block' : 'none';
-            document.querySelector('.btn-roulette').disabled = !(puedeResolver && esColores);
+            document.querySelector('.btn-roulette').style.display = esRuleta ? 'block' : 'none';
+            document.querySelector('.btn-roulette').disabled = !(puedeResolver && esRuleta);
         }
 
         function actualizarLista(players) {
@@ -213,8 +213,14 @@
             document.querySelectorAll('[data-visual]').forEach(btn => {
                 btn.classList.toggle('active-visual', btn.dataset.visual === view);
             });
-            const texto = view ? view.toUpperCase() : 'sin seleccionar';
+            const texto = nombreVisual(view);
             document.getElementById('visual-actual').innerText = `Visual actual: ${texto}`;
+        }
+
+        function nombreVisual(view) {
+            if (!view || view === "ninguna") return "sin seleccionar";
+            if (view === "especial") return "RULETA";
+            return view.toUpperCase();
         }
 
         function cambiarVisual(view, options) {
@@ -225,7 +231,7 @@
 
             visualPendiente = { view, options };
             marcarVisualActiva(view);
-            document.getElementById('visual-actual').innerText = `Visual a confirmar: ${view.toUpperCase()}`;
+            document.getElementById('visual-actual').innerText = `Visual a confirmar: ${nombreVisual(view)}`;
             actualizarControlesRonda();
         }
 
