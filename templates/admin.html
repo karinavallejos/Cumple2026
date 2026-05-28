@@ -11,6 +11,7 @@
         .control-group { border: 1px solid gold; padding: 15px; margin-bottom: 20px; border-radius: 10px; background: #262626; }
         h3 { margin-top: 0; color: #ffcc00; }
         button { padding: 12px; cursor: pointer; background: gold; border: none; font-weight: bold; border-radius: 5px; margin: 5px; }
+        button:disabled { opacity: 0.45; cursor: not-allowed; }
         button.active-visual { outline: 3px solid #00ff00; box-shadow: 0 0 12px #00ff00; }
         .btn-resolve { background: #00ff00; width: 100%; margin-top: 10px; }
         .btn-next { background: #0088ff; color: white; width: 100%; margin-top: 10px; }
@@ -18,6 +19,8 @@
         .btn-reset-all { background: #ff4444; color: white; width: 100%; margin-top: 10px; }
         input, select { padding: 10px; border-radius: 5px; background: #333; color: white; border: 1px solid gold; }
         #contador-apuestas { font-size: 3rem; font-weight: bold; color: #00ffff; text-align: center; }
+        #ronda-actual { font-size: 2rem; font-weight: bold; color: gold; text-align: center; margin-top: 8px; }
+        #estado-ronda { color: #ffcc00; text-align: center; margin-top: 8px; }
         #visual-actual { margin-top: 10px; color: #00ff00; font-weight: bold; }
         .winner-btn { width: 60px; height: 60px; font-size: 1.5rem; border: 2px solid transparent; }
     </style>
@@ -28,10 +31,12 @@
     <div class="control-group">
         <h3>Estado: Apuestas Confirmadas</h3>
         <div id="contador-apuestas">0/0</div>
+        <div id="ronda-actual">Ronda 1</div>
+        <div id="estado-ronda">Esperando inicio de ronda</div>
     </div>
 
     <div class="control-group">
-        <h3>1. Cambiar Visual</h3>
+        <h3>1. Elegir Visual</h3>
         <button type="button" data-visual="dados" onclick="cambiarVisual('dados', ['1','2','3','4','5','6'])">DADOS</button>
         <button type="button" data-visual="cartas" onclick="cambiarVisual('cartas', ['\u2665','\u2666','\u2663','\u2660'])">CARTAS</button>
         <button type="button" data-visual="especial" onclick="cambiarVisual('especial', ['ROJO','NEGRO'])">COLORES</button>
@@ -62,14 +67,22 @@
 
     <script>
         const socket = io();
+        let gameStatus = "esperando";
+        let gameRound = 1;
+
+        const estadoTexto = {
+            esperando: "Esperando que inicies la ronda",
+            preparando: "Ronda iniciada: ahora elige una visual",
+            apostando: "Visual activa: jugadores pueden apostar",
+            finalizada: "Ronda finalizada: inicia la siguiente"
+        };
 
         socket.on('actualizar_contador', (data) => {
             document.getElementById('contador-apuestas').innerText = data.conteo;
         });
 
         socket.on('new_game', (data) => {
-            marcarVisualActiva(data.view);
-            renderizarBotonesResolucion(data.options);
+            actualizarEstadoJuego(data);
         });
 
         socket.on('round_result', (data) => {
@@ -82,14 +95,45 @@
 
         socket.on('admin_update', (data) => {
             actualizarLista(data.players);
-            if (data.game) marcarVisualActiva(data.game.view);
+            if (data.game) actualizarEstadoJuego(data.game);
         });
 
         socket.on('state_update', (data) => {
             actualizarLista(data.players);
-            if (data.game) marcarVisualActiva(data.game.view);
+            if (data.game) actualizarEstadoJuego(data.game);
             if (data.conteo) document.getElementById('contador-apuestas').innerText = data.conteo;
         });
+
+        socket.on('admin_error', (data) => {
+            alert(data.message || "Accion no permitida en esta etapa de la ronda.");
+        });
+
+        function actualizarEstadoJuego(game) {
+            gameStatus = game.status || "esperando";
+            gameRound = game.ronda || 1;
+            document.getElementById('ronda-actual').innerText = `Ronda ${gameRound}`;
+            document.getElementById('estado-ronda').innerText = estadoTexto[gameStatus] || gameStatus;
+            marcarVisualActiva(game.view);
+            renderizarBotonesResolucion(game.options || []);
+            actualizarControlesRonda();
+        }
+
+        function actualizarControlesRonda() {
+            const puedeElegirVisual = gameStatus === "preparando";
+            const puedeResolver = gameStatus === "apostando";
+            const puedeIniciar = gameStatus === "esperando" || gameStatus === "finalizada";
+
+            document.querySelectorAll('[data-visual]').forEach(btn => {
+                btn.disabled = !puedeElegirVisual;
+            });
+
+            document.querySelectorAll('.winner-btn').forEach(btn => {
+                btn.disabled = !puedeResolver;
+            });
+
+            document.querySelector('.btn-resolve').disabled = !puedeResolver;
+            document.querySelector('.btn-next').disabled = !puedeIniciar;
+        }
 
         function actualizarLista(players) {
             const lista = document.getElementById('lista-admin-jugadores');
@@ -129,6 +173,7 @@
                 };
                 contenedor.appendChild(btn);
             });
+            actualizarControlesRonda();
         }
 
         function marcarVisualActiva(view) {
@@ -140,18 +185,33 @@
         }
 
         function cambiarVisual(view, options) {
+            if (gameStatus !== "preparando") {
+                alert("Primero inicia una ronda nueva.");
+                return;
+            }
+
             socket.emit('admin_change_view', { view, options });
             marcarVisualActiva(view);
             renderizarBotonesResolucion(options);
         }
 
         function resolver() {
+            if (gameStatus !== "apostando") {
+                alert("Primero inicia la ronda y elige una visual.");
+                return;
+            }
+
             const res = document.getElementById('resultadoGanador').value;
             if (res) socket.emit('admin_resolve', { ganador: res });
             else alert("Selecciona un ganador");
         }
 
         function siguienteRonda() {
+            if (gameStatus !== "esperando" && gameStatus !== "finalizada") {
+                alert("Primero paga y finaliza la ronda actual.");
+                return;
+            }
+
             socket.emit('admin_next_round');
         }
 
@@ -174,6 +234,7 @@
         }
 
         socket.emit('admin_get_players');
+        actualizarControlesRonda();
     </script>
 </body>
 </html>
