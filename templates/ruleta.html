@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruleta de Colores</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #050505;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 18px;
+        }
+
+        h1 {
+            color: gold;
+            margin: 0;
+            letter-spacing: 0;
+        }
+
+        .pointer {
+            width: 0;
+            height: 0;
+            border-left: 18px solid transparent;
+            border-right: 18px solid transparent;
+            border-top: 34px solid gold;
+            filter: drop-shadow(0 0 8px gold);
+        }
+
+        .wheel {
+            width: min(78vw, 420px);
+            height: min(78vw, 420px);
+            border-radius: 50%;
+            border: 8px solid gold;
+            box-shadow: 0 0 35px rgba(255, 215, 0, 0.75);
+            background: conic-gradient(#d71920 0deg 60deg, #050505 60deg 120deg, #00a651 120deg 180deg, #0077ff 180deg 240deg, #ffffff 240deg 300deg, #ffd400 300deg 360deg);
+        }
+
+        .wheel.spinning {
+            animation: spinRoulette 4.5s cubic-bezier(.12,.72,.2,1) forwards;
+        }
+
+        #resultado {
+            min-height: 36px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        @keyframes spinRoulette {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(1840deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>RULETA DE COLORES</h1>
+    <div class="pointer"></div>
+    <div id="wheel" class="wheel"></div>
+    <div id="resultado">Esperando activacion del Host</div>
+
+    <script>
+        const socket = io();
+
+        socket.on('roulette_spin', (data) => {
+            const wheel = document.getElementById('wheel');
+            const resultado = document.getElementById('resultado');
+
+            resultado.innerText = 'Girando...';
+            wheel.classList.remove('spinning');
+            void wheel.offsetWidth;
+            wheel.classList.add('spinning');
+
+            setTimeout(() => {
+                resultado.innerText = 'Color ganador: ' + data.ganador;
+            }, data.duration || 4500);
+        });
+    </script>
+</body>
+</html>
