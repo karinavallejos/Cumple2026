@@ -27,6 +27,11 @@
         .winner-btn { width: 60px; height: 60px; font-size: 1.5rem; border: 2px solid transparent; }
         .color-btn { color: transparent; text-shadow: none; }
         .btn-roulette { display: none; background: #9b5cff; color: white; width: 100%; margin-top: 10px; }
+        .btn-buzzer { background: #ff0077; color: white; width: 100%; margin-top: 10px; }
+        .btn-song { background: #00ffff; color: black; width: 100%; margin-top: 10px; }
+        .buzzer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 8px; }
+        .table-score { border: 1px solid #555; border-radius: 8px; padding: 8px; background: #181818; }
+        .buzz-row { display: grid; grid-template-columns: 34px 1fr 88px; gap: 8px; padding: 7px 0; border-bottom: 1px solid #333; align-items: center; }
     </style>
 </head>
 <body>
@@ -73,12 +78,27 @@
         <button type="button" onclick="reiniciarJuegoCompleto()" class="btn-reset-all">REINICIAR JUEGO COMPLETO</button>
     </div>
 
+    <div class="control-group">
+        <h3>Chicharra</h3>
+        <div id="buzzer-admin-status">Inactiva</div>
+        <button type="button" onclick="activarPanelChicharra()" class="btn-buzzer">ACTIVAR PANEL CHICHARRA</button>
+        <button type="button" onclick="desactivarPanelChicharra()" class="btn-reset-all">VOLVER A APUESTAS</button>
+        <button type="button" onclick="iniciarCancion()" class="btn-song">HABILITAR CHICHARRA / NUEVA CANCION</button>
+        <button type="button" onclick="cerrarCancionSinPunto()" class="btn-reset-money">BLOQUEAR SIN PUNTO</button>
+        <h3 style="margin-top: 18px;">Orden de chicharra</h3>
+        <div id="buzzer-lista"></div>
+        <h3 style="margin-top: 18px;">Puntos por mesa</h3>
+        <div id="buzzer-mesas" class="buzzer-grid"></div>
+    </div>
+
     <script>
         const socket = io();
         let gameStatus = "esperando";
         let gameRound = 1;
         let currentView = "ninguna";
         let visualPendiente = null;
+        let buzzerState = null;
+        const mesasChicharra = ['Elvis', 'Circus', 'Bellagio', 'All in', 'Flamingo', 'Jackpot', 'Luxor'];
         const colorStyles = {
             ROJO: { background: "#d71920", color: "#d71920", border: "#ffb3b3" },
             NEGRO: { background: "#050505", color: "#050505", border: "#ffffff" },
@@ -121,6 +141,14 @@
         socket.on('admin_update', (data) => {
             actualizarLista(data.players);
             if (data.game) actualizarEstadoJuego(data.game);
+        });
+
+        socket.on('admin_buzzer_update', (data) => {
+            actualizarChicharraAdmin(data);
+        });
+
+        socket.on('buzzer_state', (data) => {
+            actualizarChicharraAdmin(data);
         });
 
         socket.on('state_update', (data) => {
@@ -324,6 +352,70 @@
             if (confirm("Reiniciar todo el juego? Se borran jugadores, dinero y todos deberan registrarse de nuevo.")) {
                 socket.emit('admin_reset_all');
             }
+        }
+
+        function activarPanelChicharra() {
+            socket.emit('admin_activate_buzzer');
+        }
+
+        function desactivarPanelChicharra() {
+            socket.emit('admin_deactivate_buzzer');
+        }
+
+        function iniciarCancion() {
+            socket.emit('admin_start_song');
+        }
+
+        function cerrarCancionSinPunto() {
+            socket.emit('admin_close_song');
+        }
+
+        function darPuntoMesa(table) {
+            socket.emit('admin_award_buzzer_point', { table, delta: 1 });
+        }
+
+        function ajustarMesa(table, delta) {
+            socket.emit('admin_adjust_table_score', { table, delta });
+        }
+
+        function actualizarChicharraAdmin(data) {
+            if (!data) return;
+            buzzerState = data;
+            document.getElementById('buzzer-admin-status').innerText = data.active
+                ? `Activa - Cancion ${data.song || 0} - ${data.enabled ? 'CHICHARRA HABILITADA' : 'bloqueada'}`
+                : 'Inactiva';
+
+            const lista = document.getElementById('buzzer-lista');
+            lista.innerHTML = '';
+            const primeros = (data.buzzes || []).slice(0, 15);
+            if (primeros.length === 0) {
+                lista.innerHTML = '<div style="color:#aaa;">Sin respuestas todavia.</div>';
+            } else {
+                primeros.forEach((item, index) => {
+                    const row = document.createElement('div');
+                    row.className = 'buzz-row';
+                    row.innerHTML = `
+                        <strong style="color: gold;">${index + 1}</strong>
+                        <span>${item.name} - ${item.table}<br><small>${item.elapsed}s</small></span>
+                        <button type="button" onclick="darPuntoMesa('${item.table}')">+1 ${item.table}</button>
+                    `;
+                    lista.appendChild(row);
+                });
+            }
+
+            const mesas = document.getElementById('buzzer-mesas');
+            mesas.innerHTML = '';
+            mesasChicharra.forEach(table => {
+                const box = document.createElement('div');
+                box.className = 'table-score';
+                box.innerHTML = `
+                    <strong>${table}</strong>
+                    <div style="font-size: 1.6rem; color: gold;">${(data.tables || {})[table] || 0}</div>
+                    <button type="button" onclick="ajustarMesa('${table}', 1)">+</button>
+                    <button type="button" onclick="ajustarMesa('${table}', -1)">-</button>
+                `;
+                mesas.appendChild(box);
+            });
         }
 
         socket.emit('admin_get_players');
