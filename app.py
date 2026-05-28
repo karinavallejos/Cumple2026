@@ -9,13 +9,14 @@ import time
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'cumple_secreto_2026'
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
+ROULETTE_COLORS = ['ROJO', 'NEGRO', 'VERDE', 'AZUL', 'BLANCO', 'AMARILLO']
 
 # --- VARIABLES GLOBALES ---
-players = {} 
+players = {}
 current_game = {
-    "view": "ninguna", 
+    "view": "ninguna",
     "options": [],
-    "status": "esperando", 
+    "status": "esperando",
     "ronda": 1
 }
 
@@ -58,7 +59,7 @@ def puntos_iniciales_jugador():
     return max(0, 1000 - descuento)
 
 def preparar_siguiente_ronda():
-    if current_game['status'] == 'apostando':
+    if current_game['status'] in ['apostando', 'girando']:
         return False
 
     if current_game['status'] == 'finalizada':
@@ -76,6 +77,38 @@ def preparar_siguiente_ronda():
 
     return True
 
+def finalizar_ronda(ganador):
+    current_game['status'] = 'finalizada'
+    ganador_rapido = None
+    dulces_ganadores = []
+
+    for user, info in players.items():
+        if info['aposto']:
+            if str(info['opcion']) == str(ganador):
+                players[user]['puntos'] += (info['apuesta_valor'] * 2)
+                if current_game['view'] == 'dulces' and info.get('apuesta_ts') is not None:
+                    dulces_ganadores.append({
+                        'name': user,
+                        'apuesta_ts': info['apuesta_ts']
+                    })
+        else:
+            players[user]['puntos'] = max(0, players[user]['puntos'] - 50)
+
+        players[user]['aposto'] = False
+        players[user]['apuesta_valor'] = 0
+        players[user]['opcion'] = None
+        players[user]['apuesta_ts'] = None
+
+    if dulces_ganadores:
+        ganador_rapido = min(dulces_ganadores, key=lambda item: item['apuesta_ts'])['name']
+
+    socketio.emit('round_result', {'ganador': ganador, 'players': players, 'ganador_rapido_dulces': ganador_rapido})
+    emitir_estado_global()
+
+def finalizar_ruleta(ganador):
+    socketio.sleep(5)
+    finalizar_ronda(ganador)
+
 # --- RUTAS ---
 @app.route('/')
 def index(): return render_template('index.html')
@@ -91,6 +124,9 @@ def ranking():
     jugadores_ordenados = sorted(players.items(), key=lambda x: (-x[1]['puntos'], x[0]))
     return render_template('ranking.html', ranking=jugadores_ordenados)
 
+@app.route('/ruleta')
+def ruleta(): return render_template('ruleta.html')
+
 # --- EVENTOS ---
 @socketio.on('join')
 def handle_join(data):
@@ -98,9 +134,9 @@ def handle_join(data):
     if not name: return
     if name not in players:
         players[name] = {'puntos': puntos_iniciales_jugador(), 'aposto': False, 'apuesta_valor': 0, 'opcion': None, 'apuesta_ts': None}
-    
+
     emit('update_data', {
-        'puntos': players[name]['puntos'], 
+        'puntos': players[name]['puntos'],
         'game': current_game,
         'players': players
     }, broadcast=False)
@@ -186,7 +222,7 @@ def handle_reset_all():
     reiniciar_ronda()
     emit('game_reset_done', broadcast=True)
     emitir_estado_global()
-# --- EVENTO ADMIN: CAMBIAR VISUAL ---
+
 @socketio.on('admin_start_round')
 def admin_start_round(data):
     if not preparar_siguiente_ronda():
@@ -201,39 +237,35 @@ def resolve(data):
         emit('admin_error', {'message': 'Inicia una ronda y elige una visual antes de pagar.'}, broadcast=False)
         return
 
+    if current_game['view'] == 'especial':
+        emit('admin_error', {'message': 'Para colores usa el boton ACTIVAR RULETA.'}, broadcast=False)
+        return
+
     ganador = data['ganador']
-    current_game['status'] = 'finalizada'
-    ganador_rapido = None
-    dulces_ganadores = []
+    finalizar_ronda(ganador)
 
-    for user, info in players.items():
-        if info['aposto']:
-            if str(info['opcion']) == str(ganador):
-                players[user]['puntos'] += (info['apuesta_valor'] * 2)
-                if current_game['view'] == 'dulces' and info.get('apuesta_ts') is not None:
-                    dulces_ganadores.append({
-                        'name': user,
-                        'apuesta_ts': info['apuesta_ts']
-                    })
-        else:
-            players[user]['puntos'] = max(0, players[user]['puntos'] - 50)
+@socketio.on('admin_spin_roulette')
+def spin_roulette():
+    if current_game['status'] != 'apostando' or current_game['view'] != 'especial':
+        emit('admin_error', {'message': 'La ruleta solo se puede activar en una ronda de colores.'}, broadcast=False)
+        return
 
-        players[user]['aposto'] = False
-        players[user]['apuesta_valor'] = 0
-        players[user]['opcion'] = None
-        players[user]['apuesta_ts'] = None
-
-    if dulces_ganadores:
-        ganador_rapido = min(dulces_ganadores, key=lambda item: item['apuesta_ts'])['name']
-
-    emit('round_result', {'ganador': ganador, 'players': players, 'ganador_rapido_dulces': ganador_rapido}, broadcast=True)
+    opciones = current_game['options'] or ROULETTE_COLORS
+    ganador = random.choice(opciones)
+    current_game['status'] = 'girando'
+    socketio.emit('roulette_spin', {
+        'ganador': ganador,
+        'colors': opciones,
+        'duration': 4500
+    })
     emitir_estado_global()
+    socketio.start_background_task(finalizar_ruleta, ganador)
 
-# Agrega esto para que el admin siempre tenga la lista al dÃ­a
 @socketio.on('admin_get_players')
 def get_players():
     emit('admin_update', {'players': players, 'game': current_game}, broadcast=False)
     emit('state_update', estado_global(), broadcast=False)
+
 @socketio.on('admin_refund_bets')
 def refund_bets():
     for name, info in players.items():
@@ -244,5 +276,6 @@ def refund_bets():
             players[name]['opcion'] = None
             players[name]['apuesta_ts'] = None
     emitir_estado_global()
+
 if __name__ == '__main__':
     socketio.run(app, debug=True)
