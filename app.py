@@ -49,6 +49,24 @@ def reiniciar_ronda():
     current_game['status'] = 'esperando'
     current_game['ronda'] = 1
 
+def preparar_siguiente_ronda():
+    if current_game['status'] == 'apostando':
+        return False
+
+    if current_game['status'] == 'finalizada':
+        current_game['ronda'] += 1
+
+    current_game['view'] = 'ninguna'
+    current_game['options'] = []
+    current_game['status'] = 'preparando'
+
+    for user in players:
+        players[user]['aposto'] = False
+        players[user]['opcion'] = None
+        players[user]['apuesta_valor'] = 0
+
+    return True
+
 # --- RUTAS ---
 @app.route('/')
 def index(): return render_template('index.html')
@@ -84,7 +102,10 @@ def handle_bet(data):
     user = data['name']
     monto = int(data['monto'])
     opcion = data['opcion']
-    
+
+    if current_game['status'] != 'apostando':
+        return
+
     if user in players and players[user]['puntos'] >= monto:
         players[user]['puntos'] -= monto
         players[user]['aposto'] = True
@@ -95,6 +116,10 @@ def handle_bet(data):
 
 @socketio.on('admin_change_view')
 def change_view(data):
+    if current_game['status'] != 'preparando':
+        emit('admin_error', {'message': 'Primero inicia una ronda nueva.'}, broadcast=False)
+        return
+
     current_game['view'] = data['view']
     current_game['options'] = data['options']
     current_game['status'] = 'apostando'
@@ -103,13 +128,10 @@ def change_view(data):
 
 @socketio.on('admin_next_round')
 def next_round():
-    current_game['ronda'] += 1
-    current_game['status'] = 'apostando'
-    for user in players:
-        players[user]['aposto'] = False
-        players[user]['opcion'] = None
-        players[user]['apuesta_valor'] = 0
-    emit('new_game', current_game, broadcast=True)
+    if not preparar_siguiente_ronda():
+        emit('admin_error', {'message': 'Primero paga y finaliza la ronda actual.'}, broadcast=False)
+        return
+
     emitir_estado_global()
 
 @socketio.on('admin_give_money_specific')
@@ -156,23 +178,18 @@ def handle_reset_all():
 # --- EVENTO ADMIN: CAMBIAR VISUAL ---
 @socketio.on('admin_start_round')
 def admin_start_round(data):
-    # Esto es lo que inicia una ronda: pide visual y opciones
-    current_game['view'] = data['view']
-    current_game['options'] = data['options']
-    current_game['status'] = 'apostando'
-    current_game['ronda'] += 1
-    
-    # Limpiamos apuestas anteriores al iniciar nueva ronda
-    for name in players:
-        players[name]['aposto'] = False
-        players[name]['apuesta_valor'] = 0
-        players[name]['opcion'] = None
-        
-    emit('new_game', current_game, broadcast=True)
+    if not preparar_siguiente_ronda():
+        emit('admin_error', {'message': 'Primero paga y finaliza la ronda actual.'}, broadcast=False)
+        return
+
     emitir_estado_global()
 
 @socketio.on('admin_resolve')
 def resolve(data):
+    if current_game['status'] != 'apostando':
+        emit('admin_error', {'message': 'Inicia una ronda y elige una visual antes de pagar.'}, broadcast=False)
+        return
+
     ganador = data['ganador']
     current_game['status'] = 'finalizada'
 
@@ -183,7 +200,9 @@ def resolve(data):
         else:
             players[user]['puntos'] = max(0, players[user]['puntos'] - 50)
         
-        players[user]['aposto'] = False # Limpiar estado
+        players[user]['aposto'] = False
+        players[user]['apuesta_valor'] = 0
+        players[user]['opcion'] = None
             
     emit('round_result', {'ganador': ganador, 'players': players}, broadcast=True)
     emitir_estado_global()
