@@ -69,19 +69,19 @@ function ocultarControles() {
 function mostrarBancaRota() {
     ocultarControles();
     setMensaje(`
-        <h1 style="color: #ff4444; font-size: 3rem; text-shadow: 0 0 15px red;">Banca Rota! :c</h1>
+        <h1 style="color: #ff4444; font-size: 3rem; text-shadow: 0 0 15px red;">Banca Rota! 💀 :c</h1>
         <p style="color: white; font-size: 1.2rem;">Has perdido todo tu dinero, podrias volver a jugar si te ganas un bono del Host.</p>
     `);
 }
 
 function mostrarEsperaHost() {
     ocultarControles();
-    setMensaje("<h2>Bienvenido!</h2><p>Espera a que el Host inicie las apuestas.</p>");
+    setMensaje("<h2>Bienvenido! 🎰</h2><p>Espera a que el Host inicie las apuestas.</p>");
 }
 
 function mostrarEsperaResultado() {
     ocultarControles();
-    setMensaje("<h2>Buena suerte!</h2><p>Espera a que el Host de el resultado de la ronda.</p>");
+    setMensaje("<h2>Buena suerte! 🍀</h2><p>Espera a que el Host de el resultado de la ronda.</p>");
 }
 
 function actualizarMisPuntos(players) {
@@ -427,6 +427,7 @@ function asegurarModalRuleta() {
                 font-weight: bold;
                 text-transform: uppercase;
             }
+
         `;
         document.head.appendChild(styles);
     }
