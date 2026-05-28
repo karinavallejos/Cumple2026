@@ -12,7 +12,7 @@ body {
 /* 1. Logo pegado arriba y dinero inmediatamente abajo */
 .header-vegas { 
     margin-top: 0; 
-    padding: 5px 0; /* Espacio mínimo arriba */
+    padding: 5px 0; /* Espacio mÃ­nimo arriba */
 }
 
 .header-vegas img { 
@@ -40,8 +40,8 @@ body {
     margin-bottom: 15px;
 }
 
-/* 2. Feedback visual de selección (Borde Amarillo Neón) */
-/* Se aplica tanto a los números/pintas como a los círculos de dinero */
+/* 2. Feedback visual de selecciÃ³n (Borde Amarillo NeÃ³n) */
+/* Se aplica tanto a los nÃºmeros/pintas como a los cÃ­rculos de dinero */
 .opcion-btn.selected, .apuesta-btn.selected-money {
     border: 5px solid #ffcc00 !important;
     box-shadow: 0 0 20px #ffcc00;
@@ -49,7 +49,7 @@ body {
     outline: none;
 }
 
-/* 3. Cuadrícula de opciones (Dados/Cartas) */
+/* 3. CuadrÃ­cula de opciones (Dados/Cartas) */
 .grid-opciones { 
     display: grid; 
     grid-template-columns: repeat(3, 1fr); 
@@ -68,6 +68,17 @@ body {
     cursor: pointer; 
     border-radius: 10px;
     transition: 0.2s;
+}
+
+.opcion-btn.color-option {
+    width: 100%;
+    min-width: 0;
+    height: 74px;
+    padding: 0;
+    box-sizing: border-box;
+    color: transparent !important;
+    text-shadow: none !important;
+    overflow: hidden;
 }
 
 /* 4. Contenedor de apuestas y Monto Manual */
@@ -94,7 +105,7 @@ body {
     font-size: 0.9rem;
 }
 
-/* Estilo para el círculo de entrada manual */
+/* Estilo para el cÃ­rculo de entrada manual */
 #monto-manual {
     width: 75px; 
     height: 75px; 
@@ -108,7 +119,7 @@ body {
     box-sizing: border-box;
 }
 
-/* 5. Botón de confirmar centrado */
+/* 5. BotÃ³n de confirmar centrado */
 .confirmar-container {
     display: flex;
     justify-content: center;
