@@ -14,6 +14,7 @@
         button:disabled { opacity: 0.45; cursor: not-allowed; }
         button.active-visual { outline: 3px solid #00ff00; box-shadow: 0 0 12px #00ff00; }
         .btn-confirm-visual { background: #00cc66; color: white; }
+        .btn-reactivate-visual { background: #ff8800; color: white; }
         .btn-resolve { background: #00ff00; width: 100%; margin-top: 10px; }
         .btn-next { background: #0088ff; color: white; width: 100%; margin-top: 10px; }
         .btn-reset-money { background: #ffcc00; color: black; width: 100%; margin-top: 10px; }
@@ -51,6 +52,7 @@
         <button type="button" data-visual="especial" onclick="cambiarVisual('especial', ['ROJO','NEGRO','VERDE','AZUL','BLANCO','AMARILLO'])">RULETA</button>
         <button type="button" data-visual="dulces" onclick="cambiarVisual('dulces', ['35','36','37','38','39','40','41','42'])">DULCES</button>
         <button type="button" class="btn-confirm-visual" onclick="confirmarVisual()">CONFIRMAR VISUAL</button>
+        <button type="button" class="btn-reactivate-visual" onclick="reactivarVisual()">LANZAR VISUAL DE NUEVO</button>
         <div id="visual-actual">Visual actual: sin seleccionar</div>
     </div>
 
@@ -191,6 +193,7 @@
             document.querySelector('.btn-resolve').disabled = !puedeResolver || esRuleta;
             document.querySelector('.btn-next').disabled = !puedeIniciar;
             document.querySelector('.btn-confirm-visual').disabled = !puedeElegirVisual || !visualPendiente;
+            document.querySelector('.btn-reactivate-visual').disabled = !puedeResolver;
             document.querySelector('.btn-roulette').style.display = esRuleta ? 'block' : 'none';
             document.querySelector('.btn-roulette').disabled = !(puedeResolver && esRuleta);
         }
@@ -275,6 +278,15 @@
             }
 
             socket.emit('admin_change_view', visualPendiente);
+        }
+
+        function reactivarVisual() {
+            if (gameStatus !== "apostando") {
+                alert("Solo puedes lanzar la visual de nuevo durante una ronda activa.");
+                return;
+            }
+
+            socket.emit('admin_reactivate_betting');
         }
 
         function resolver() {
