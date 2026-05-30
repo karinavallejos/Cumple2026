@@ -182,6 +182,9 @@ def handle_bet(data):
     if current_game['status'] != 'apostando':
         return
 
+    if user in players and players[user].get('aposto'):
+        return
+
     if user in players and players[user]['puntos'] >= monto:
         players[user]['puntos'] -= monto
         players[user]['aposto'] = True
@@ -201,6 +204,18 @@ def change_view(data):
     current_game['options'] = data['options']
     current_game['status'] = 'apostando'
     emit('new_game', current_game, broadcast=True)
+    emitir_estado_global()
+
+@socketio.on('admin_reactivate_betting')
+def reactivate_betting():
+    if current_game['status'] != 'apostando' or not current_game['options']:
+        emit('admin_error', {'message': 'Solo puedes reactivar la visual durante una ronda activa.'}, broadcast=False)
+        return
+
+    socketio.emit('reactivate_betting', {
+        'game': current_game,
+        'players': players
+    })
     emitir_estado_global()
 
 @socketio.on('admin_next_round')
@@ -255,7 +270,7 @@ def handle_reset_all():
     emit('game_reset_done', broadcast=True)
     emitir_estado_global()
     emitir_chicharra()
-
+# --- EVENTO ADMIN: CAMBIAR VISUAL ---
 @socketio.on('admin_start_round')
 def admin_start_round(data):
     if not preparar_siguiente_ronda():
@@ -382,12 +397,12 @@ def admin_adjust_table_score(data):
     buzzer_game['tables'][table] += delta
     emitir_chicharra()
 
+# Agrega esto para que el admin siempre tenga la lista al dia
 @socketio.on('admin_get_players')
 def get_players():
     emit('admin_update', {'players': players, 'game': current_game}, broadcast=False)
     emit('state_update', estado_global(), broadcast=False)
     emit('admin_buzzer_update', buzzer_game, broadcast=False)
-
 @socketio.on('admin_refund_bets')
 def refund_bets():
     for name, info in players.items():
@@ -398,6 +413,5 @@ def refund_bets():
             players[name]['opcion'] = None
             players[name]['apuesta_ts'] = None
     emitir_estado_global()
-
 if __name__ == '__main__':
     socketio.run(app, debug=True)
