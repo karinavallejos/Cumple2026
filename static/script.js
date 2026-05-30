@@ -233,6 +233,46 @@ socket.on('state_update', (data) => {
     }
 });
 
+socket.on('reactivate_betting', (data) => {
+    if (!miNombre) {
+        window.location.href = "/";
+        return;
+    }
+
+    ocultarChicharra();
+    listaGlobalJugadores = data.players || {};
+    const miEstado = listaGlobalJugadores[miNombre];
+    if (!miEstado) return;
+
+    currentPuntos = miEstado.puntos;
+    document.getElementById('display-puntos').innerText = "$" + currentPuntos;
+    document.getElementById('ronda-display').innerText = "RONDA " + data.game.ronda;
+
+    if (currentPuntos <= 0) {
+        mostrarBancaRota();
+        return;
+    }
+
+    if (miEstado.aposto) {
+        apuestaEnviada = true;
+        mostrarEsperaResultado();
+        return;
+    }
+
+    apuestaEnviada = false;
+    const controles = document.getElementById('controles-juego');
+    const msgArea = document.getElementById('mensaje-espera');
+    const tieneOpciones = document.querySelectorAll('#contenedor-opciones .opcion-btn').length > 0;
+    const controlesVisibles = controles && controles.style.display === 'block';
+
+    if (!controlesVisibles || !tieneOpciones) {
+        renderizarBotones(data.game.options || []);
+    }
+
+    if (msgArea) msgArea.style.display = 'none';
+    if (controles) controles.style.display = 'block';
+});
+
 socket.on('money_reset_done', (data) => {
     apuestaEnviada = false;
     listaGlobalJugadores = data.players || {};
